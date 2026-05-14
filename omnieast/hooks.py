@@ -174,7 +174,8 @@ scheduler_events = {
 #
 # Specify custom mixins to extend the standard doctype controller.
 extend_doctype_class = {
-	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin"
+	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin",
+    "Workspace Sidebar": "omnieast.overrides.workspace_sidebar.CustomWorkspaceSidebar"
 }
 
 # Overriding Methods
