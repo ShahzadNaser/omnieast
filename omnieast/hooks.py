@@ -143,23 +143,26 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"omnieast.tasks.all"
-# 	],
-# 	"daily": [
-# 		"omnieast.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"omnieast.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"omnieast.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"omnieast.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "daily_long": [
+        "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
+    ]
+	# "all": [
+	# 	"omnieast.tasks.all"
+	# ],
+	# "daily": [
+	# 	"omnieast.tasks.daily"
+	# ],
+	# "hourly": [
+	# 	"omnieast.tasks.hourly"
+	# ],
+	# "weekly": [
+	# 	"omnieast.tasks.weekly"
+	# ],
+	# "monthly": [
+	# 	"omnieast.tasks.monthly"
+	# ],
+}
 
 # Testing
 # -------
@@ -170,9 +173,9 @@ app_license = "mit"
 # ------------------------------
 #
 # Specify custom mixins to extend the standard doctype controller.
-# extend_doctype_class = {
-# 	"Task": "omnieast.custom.task.CustomTaskMixin"
-# }
+extend_doctype_class = {
+	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin"
+}
 
 # Overriding Methods
 # ------------------------------
