@@ -1,0 +1,65 @@
+[
+ {
+  "combination": "0-to-2",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "2",
+  "min_grade": "0",
+  "modified": "2026-03-10 00:19:56.640665",
+  "name": "0-to-2"
+ },
+ {
+  "combination": "3-to-4",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "4",
+  "min_grade": "3",
+  "modified": "2026-03-10 00:20:29.111914",
+  "name": "3-to-4"
+ },
+ {
+  "combination": "5-to-6",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "6",
+  "min_grade": "5",
+  "modified": "2026-03-10 00:20:40.193736",
+  "name": "5-to-6"
+ },
+ {
+  "combination": "7-to-8",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "8",
+  "min_grade": "7",
+  "modified": "2026-03-10 00:20:52.848803",
+  "name": "7-to-8"
+ },
+ {
+  "combination": "9-to-10",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "10",
+  "min_grade": "9",
+  "modified": "2026-03-10 00:21:04.514432",
+  "name": "9-to-10"
+ },
+ {
+  "combination": "11-to-12",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "12",
+  "min_grade": "11",
+  "modified": "2026-03-10 00:21:21.786699",
+  "name": "11-to-12"
+ },
+ {
+  "combination": "13-to-above",
+  "docstatus": 0,
+  "doctype": "Grade Level",
+  "max_grade": "above",
+  "min_grade": "13",
+  "modified": "2026-03-10 00:24:39.631275",
+  "name": "13-to-above"
+ }
+]

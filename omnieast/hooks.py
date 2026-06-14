@@ -132,13 +132,16 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Leave Application": {
+        "on_submit": "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request"
+    },
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+}
 
 # Scheduled Tasks
 # ---------------
@@ -181,9 +184,9 @@ extend_doctype_class = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "omnieast.event.get_events"
-# }
+override_whitelisted_methods = {
+	"hrms.hr.doctype.leave_application.leave_application.get_leave_details": "omnieast.overrided_whitelisted.leave_application.get_leave_details"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
