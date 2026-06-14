@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{grade_level}-{diem_type}-{travel_type}",
+ "creation": "2026-06-14 13:03:09.605747",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "grade_level",
+  "min_grade",
+  "max_grade",
+  "column_break_axqo",
+  "diem_type",
+  "travel_type",
+  "flight_class",
+  "section_break_ckbx",
+  "amount",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "grade_level",
+   "fieldtype": "Link",
+   "label": "Grade Level",
+   "options": "Grade Level"
+  },
+  {
+   "fetch_from": "grade_level.min_grade",
+   "fieldname": "min_grade",
+   "fieldtype": "Data",
+   "label": "Min Grade",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "grade_level.max_grade",
+   "fieldname": "max_grade",
+   "fieldtype": "Data",
+   "label": "Max Grade",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_axqo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "diem_type",
+   "fieldtype": "Select",
+   "label": "Diem Type",
+   "options": "Full Diem\nHalf Diem"
+  },
+  {
+   "fieldname": "travel_type",
+   "fieldtype": "Select",
+   "label": "Travel Type",
+   "options": "Local With KSA\nOverseas"
+  },
+  {
+   "fieldname": "flight_class",
+   "fieldtype": "Select",
+   "label": "Flight Class",
+   "options": "Business\nEconomy\nN/A"
+  },
+  {
+   "fieldname": "section_break_ckbx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-14 13:09:19.424478",
+ "modified_by": "Administrator",
+ "module": "Omnieast",
+ "name": "Travel Policy",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
