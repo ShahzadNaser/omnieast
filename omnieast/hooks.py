@@ -27,6 +27,7 @@ app_license = "mit"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/omnieast/css/omnieast.css"
 app_include_js = [
+	"/assets/omnieast/js/omnieast.js",
 	"/assets/omnieast/js/accounts_payable_default_party.js",
 ]
 
