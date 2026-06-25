@@ -35,16 +35,6 @@ def _wrap(original):
 
 
 def apply():
-    try:
-        from jawacat import whielisted as jawacat_whitelisted
-
-        if not getattr(jawacat_whitelisted.get_script, "_omnieast_wrapped", False):
-            wrapped = _wrap(jawacat_whitelisted.get_script)
-            wrapped._omnieast_wrapped = True
-            jawacat_whitelisted.get_script = wrapped
-    except ImportError:
-        pass
-
     from frappe.desk import query_report
 
     if not getattr(query_report.get_script, "_omnieast_wrapped", False):
