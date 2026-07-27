@@ -136,6 +136,10 @@ doc_events = {
     "Leave Application": {
         "on_submit": "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request"
     },
+    "Journal Entry": {
+        "on_submit": "omnieast.overrides.journal_entry.on_submit",
+        "on_cancel": "omnieast.overrides.journal_entry.on_cancel",
+    },
 	# "*": {
 	# 	"on_update": "method",
 	# 	"on_cancel": "method",
@@ -167,6 +171,13 @@ scheduler_events = {
 	# ],
 }
 
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [["name", "in", ["Project-total_indirect_cost"]]],
+    },
+]
+
 # Testing
 # -------
 
@@ -178,7 +189,8 @@ scheduler_events = {
 # Specify custom mixins to extend the standard doctype controller.
 extend_doctype_class = {
 	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin",
-    "Workspace Sidebar": "omnieast.overrides.workspace_sidebar.CustomWorkspaceSidebar"
+    "Workspace Sidebar": "omnieast.overrides.workspace_sidebar.CustomWorkspaceSidebar",
+    "Project": "omnieast.overrides.project.CustomProjectMixin",
 }
 
 # Overriding Methods
