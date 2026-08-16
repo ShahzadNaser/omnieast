@@ -153,7 +153,12 @@ doc_events = {
 scheduler_events = {
     "daily_long": [
         "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
-    ]
+    ],
+    "cron": {
+        "*/10 * * * *": [
+            "omnieast.api.attendance.sync_att_time"
+        ]
+    }
 	# "all": [
 	# 	"omnieast.tasks.all"
 	# ],
