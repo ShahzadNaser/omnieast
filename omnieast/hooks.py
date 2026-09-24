@@ -137,8 +137,21 @@ doc_events = {
         "on_submit": "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request"
     },
     "Journal Entry": {
+        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
         "on_submit": "omnieast.overrides.journal_entry.on_submit",
         "on_cancel": "omnieast.overrides.journal_entry.on_cancel",
+    },
+    "Purchase Invoice": {
+        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+    },
+    "Sales Invoice": {
+        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+    },
+    "Expense Claim": {
+        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+    },
+    "Asset": {
+        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
 	# "*": {
 	# 	"on_update": "method",
