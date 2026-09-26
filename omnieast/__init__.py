@@ -10,3 +10,10 @@ try:
     
 except ImportError:
     pass
+
+try:
+    from omnieast.overrides.report_script import apply as _apply_report_script_overrides
+
+    _apply_report_script_overrides()
+except ImportError:
+    pass
