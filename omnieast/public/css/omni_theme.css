@@ -267,6 +267,52 @@ input[type="checkbox"]:checked { background-color: var(--jb-primary) !important;
 [data-theme="dark"] .frappe-control [style*="background:#fff3cd"] *,
 [data-theme="dark"] .frappe-control [style*="background: #fff3cd"] * { color: inherit !important; }
 
+
+/* ---------- 12c. Desktop (v16 home / app launcher) ------------------- */
+/* /desk has its own top bar and no rail: carry the rail's gradient into
+   the bar, turn the logo white, give the canvas a soft brand glow and
+   the app tiles a branded hover. Paint only. */
+.desktop-navbar {
+  background: var(--jb-grad) !important;
+  border-bottom-color: transparent !important;
+  box-shadow: 0 4px 18px rgba(8, 15, 35, .12);
+  position: relative;
+}
+.desktop-navbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--jb-beam); opacity: .9; pointer-events: none;
+}
+[data-theme="dark"] .desktop-navbar { background: linear-gradient(135deg, var(--jb-night-rail), var(--jb-night-control-2)) !important; }
+.desktop-navbar .navbar-home img { filter: brightness(0) invert(1); }
+.desktop-navbar .desktop-search-wrapper button {
+  background: rgba(255, 255, 255, .10) !important; color: rgba(255, 255, 255, .78) !important;
+  border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: none !important;
+  transition: background .15s ease;
+}
+.desktop-navbar .desktop-search-wrapper button:hover { background: rgba(255, 255, 255, .16) !important; }
+.desktop-navbar .desktop-search-wrapper button *,
+.desktop-navbar .desktop-keyboard-shortcut { color: rgba(255, 255, 255, .78) !important; }
+.desktop-navbar .desktop-search-wrapper svg { stroke: currentColor; }
+.desktop-navbar .desktop-notifications .nav-link,
+.desktop-navbar .desktop-notifications svg { color: #fff !important; stroke: currentColor; }
+.desktop-navbar .desktop-avatar .avatar-frame { box-shadow: 0 0 0 2px var(--jb-accent-hi); }
+
+#page-desktop {
+  background:
+    radial-gradient(1100px 380px at 50% 0, var(--jb-accent-soft), transparent 72%),
+    var(--bg-color) !important;
+}
+.desktop-icon .icon-container { border-radius: 18px; transition: transform .15s ease, box-shadow .15s ease; }
+.desktop-icon:hover .icon-container {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, .16), 0 0 0 3px var(--jb-accent-soft);
+}
+.desktop-icon .icon-title { transition: color .15s ease; }
+.desktop-icon:hover .icon-title { color: var(--jb-primary) !important; }
+[data-theme="dark"] .desktop-icon:hover .icon-title { color: var(--jb-accent-hi) !important; }
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .desktop-icon:hover .icon-container { transform: none; }
+}
 /* ===================================================================
    OMNI "Aurora" layer
    Deep indigo + OMNI green, taken from the Omni East logo: an indigo
@@ -347,6 +393,15 @@ body > .splash {
     radial-gradient(600px 380px at 15% 90%, rgba(90, 104, 220, .28), transparent 60%),
     linear-gradient(135deg, #0b1030, #141f55 60%, #1d2a6e) !important;
 }
+
+/* ---- Desktop (v16 home): aurora canvas + the OMNI mark near the bottom -- */
+#page-desktop { background: var(--on-aurora), var(--bg-color) !important; }
+#page-desktop::before {
+  content: ""; position: fixed; left: 0; right: 0; bottom: 28px; height: 84px;
+  pointer-events: none; opacity: .14;
+  background: var(--on-mark-g) center / contain no-repeat;
+}
+@media print { #page-desktop::before { display: none; } }
 
 /* ---------- 13. Motion / touch / print ----------------------------- */
 @media (prefers-reduced-motion: reduce) {
