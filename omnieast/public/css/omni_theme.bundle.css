@@ -386,13 +386,12 @@ body[data-ajax-state="triggered"] .page-head::after { opacity: 1; }
   box-shadow: 0 10px 26px rgba(20, 31, 85, .10), 0 0 0 1px rgba(86, 177, 133, .55);
 }
 
-/* ---- boot splash ------------------------------------------------------ */
-body > .splash {
-  background:
-    radial-gradient(700px 420px at 75% 20%, rgba(86, 177, 133, .30), transparent 62%),
-    radial-gradient(600px 380px at 15% 90%, rgba(90, 104, 220, .28), transparent 60%),
-    linear-gradient(135deg, #0b1030, #141f55 60%, #1d2a6e) !important;
-}
+/* ---- boot splash: the logo sits on the plain canvas, never on a painted
+   box (.splash is only as big as the logo, so a background there became a
+   dark rectangle behind it); at night the logo is inverted so its dark ink
+   stays readable ------------------------------------------------------ */
+body > .splash { background: transparent !important; }
+[data-theme="dark"] body > .splash img { filter: invert(1) hue-rotate(180deg); }
 
 /* ---- Desktop (v16 home): the OMNI mark oversized and cropped into the
    bottom-right corner, behind the app grid, on the aurora canvas ------- */
@@ -534,4 +533,39 @@ body[data-route=""] #page-desktop { background: transparent !important; }
     color: #fff !important; box-shadow: 0 2px 8px rgba(0, 0, 0, .25) !important;
   }
   .page-head .btn-primary svg { color: #fff; stroke: currentColor; }
+}
+
+/* ---------- Rail: collapse button and scrollbar ---------------------- */
+/* collapse button, edge-chip markup: white chip with a brand chevron (the
+   rail's white icon colour made the chevron vanish on the white chip) */
+.body-sidebar .sidebar-toggle-btn {
+  background: #fff !important; border-color: rgba(255, 255, 255, .7) !important;
+  box-shadow: 0 2px 8px rgba(8, 15, 40, .28), 0 0 0 2px var(--jb-accent-soft) !important;
+}
+.body-sidebar .sidebar-toggle-btn svg.icon { color: var(--jb-primary) !important; stroke: currentColor; }
+.body-sidebar .sidebar-toggle-btn:hover { background: var(--jb-accent-hi) !important; }
+.body-sidebar .sidebar-toggle-btn:hover svg.icon { color: var(--jb-on-accent, #fff) !important; }
+[data-theme="dark"] .body-sidebar .sidebar-toggle-btn { background: var(--jb-night-card) !important; border-color: var(--jb-night-border-2) !important; }
+[data-theme="dark"] .body-sidebar .sidebar-toggle-btn svg.icon { color: var(--jb-accent-hi) !important; }
+[data-theme="dark"] .body-sidebar .sidebar-toggle-btn:hover svg.icon { color: var(--jb-on-accent, #fff) !important; }
+/* collapse button, footer-link markup: a rail item like the others */
+.body-sidebar .body-sidebar-bottom .collapse-sidebar-link {
+  color: rgba(255, 255, 255, .8) !important; border-radius: 10px;
+  margin: 0 -7px; padding: 5px 7px; width: calc(100% + 14px); min-height: 30px;
+  transition: background .15s ease, color .15s ease;
+}
+.body-sidebar .body-sidebar-bottom .collapse-sidebar-link:hover { background: rgba(255, 255, 255, .09); color: #fff !important; }
+.body-sidebar .body-sidebar-bottom .collapse-sidebar-link svg.icon { color: inherit; }
+/* rail scrollbar: thin and translucent on the gradient, not a grey bar */
+.body-sidebar, .body-sidebar * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .22) transparent; }
+.body-sidebar .dropdown-menu, .body-sidebar .dropdown-menu * { scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color); }
+/* night mode: the Saudi Riyal symbol is a black SVG image; turn it light */
+[data-theme="dark"] img[src*="Saudi_Riyal_Symbol"] { filter: invert(1) brightness(.9); }
+
+/* ---------- Touch screens: no link-preview card ---------------------
+   Phones and tablets have no hover: the tap that opens a record also
+   opens Frappe's preview card, and nothing closes it afterwards, so it
+   stays on top of the record. Desktop hover previews are unchanged. */
+@media (hover: none) {
+  .link-preview-popover { display: none !important; }
 }
