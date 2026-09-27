@@ -420,3 +420,118 @@ body[data-route=""] #page-desktop { background: transparent !important; }
   }
 }
 @media print { .page-head::after { display: none; } }
+
+/* ---- phones: page title and list view (v16) ----
+   the record title is shown in full (wrapping); the status sits under it
+   as a small pill, so it never takes room from the title */
+@media (max-width: 767.98px) {
+  body .page-head .page-title .title-text { white-space: normal; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .list-count, .list-count * { white-space: nowrap; }
+  .layout-main-section .frappe-list .result-container .result .list-row-container { width: 100% !important; min-width: 0 !important; }
+  .layout-main-section .frappe-list .result-container .list-row-container .list-row {
+    width: 100%; min-width: 0; height: auto; flex-wrap: wrap; align-items: flex-start; row-gap: 4px;
+  }
+  .layout-main-section .frappe-list .result-container .list-row-container .list-row .level-left {
+    flex: 1 0 100%; max-width: 100%; min-width: 0 !important; overflow: hidden; text-overflow: ellipsis;
+  }
+  .layout-main-section .frappe-list .result-container .list-row .level-left .list-subject {
+    min-width: 0 !important; max-width: none !important; height: auto; white-space: normal; overflow: visible; align-items: flex-start;
+  }
+  .layout-main-section .frappe-list .result-container .list-row .list-subject > .level-item:not(.select-like) {
+    flex: 1 1 auto; min-width: 0; white-space: normal; overflow: visible; justify-content: flex-start; text-align: start;
+  }
+  .layout-main-section .frappe-list .result-container .list-row .list-subject a {
+    white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.35;
+  }
+  .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout,
+  .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout > .list-row-col,
+  .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout > .list-row-col > span { display: inline !important; }
+  .layout-main-section .frappe-list .result-container .list-row .level-right {
+    flex: 0 0 100%; max-width: 100%; min-width: 0; justify-content: flex-start; height: auto; min-height: 0; padding-top: 2px; padding-bottom: 8px; padding-left: 28px;
+  }
+  .layout-main-section .frappe-list .result-container .list-row .level-right .level-item { min-width: 0; max-width: 100%; }
+  .layout-main-section .frappe-list .result-container .list-row .level-right .visible-xs .indicator-pill {
+    display: inline-flex !important; visibility: visible !important; opacity: 1 !important;
+    max-width: 100%; min-width: 0; font-size: 11px; height: 20px; padding: 0 8px;
+  }
+  /* header row: one even bar, same edges as the cards below */
+  .layout-main-section .frappe-list .result-container .list-row-head .level-left { flex: 1 1 0%; min-width: 0 !important; }
+  .layout-main-section .frappe-list .result-container .list-row-head .level-right, .layout-main-section .frappe-list .result-container .list-row .level-right { position: static; background: transparent !important; }
+  .layout-main-section .frappe-list .result-container .list-row-head .level-right { flex: 0 0 auto; width: auto; }
+  /* each record reads as its own soft card */
+  .layout-main-section .frappe-list .result-container .result .list-row-container:not(:has(.list-row-head)) {
+    background: #ffffff !important; border: 1px solid #dde4ee !important; border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 30, 60, .06); margin: 0 0 8px; padding: 4px 6px 2px !important;
+  }
+  .layout-main-section .frappe-list .result-container .result .list-row-container .list-row, .layout-main-section .frappe-list .result-container .result .list-row-container:hover .list-row { border-bottom: 0 !important; box-shadow: none; background: transparent !important; }
+  [data-theme="dark"] .layout-main-section .frappe-list .result-container .result .list-row-container:not(:has(.list-row-head)) { background: var(--fg-hover-color) !important; border-color: var(--border-color) !important; }
+  /* filter bar, header row and records read as three separate layers */
+  .layout-main-section > .page-form { border-bottom: 1px solid #dde4ee; box-shadow: 0 1px 3px rgba(15, 30, 60, .05); margin-bottom: 10px; }
+  .layout-main-section .frappe-list .result-container { padding-right: 8px; scrollbar-width: thin; scrollbar-color: #c3ccd8 transparent; }
+  .layout-main-section .frappe-list .result-container::-webkit-scrollbar { width: 5px; }
+  .layout-main-section .frappe-list .result-container::-webkit-scrollbar-thumb { background: #c3ccd8; border-radius: 3px; }
+  .layout-main-section .frappe-list .result-container .result .list-row-container:has(.list-row-head) { background: var(--bg-color) !important; padding-bottom: 8px; }
+  .layout-main-section .frappe-list .result-container .list-row-head { background: #e6ecf4 !important; border: 1px solid #d6dee9 !important; border-radius: 10px; font-weight: 600; color: #3a4659; }
+  [data-theme="dark"] .layout-main-section > .page-form { border-bottom-color: var(--border-color); }
+  [data-theme="dark"] .layout-main-section .frappe-list .result-container .list-row-head { background: var(--control-bg) !important; border-color: var(--border-color) !important; color: var(--text-muted); }
+}
+
+/* ---- phones: record header (v16) ----
+   the record title gets the full width (up to two lines) and the status
+   sits on its own line under it, spelled out, so tapping or hovering the
+   status can never squeeze the title down to a few characters */
+@media (max-width: 767.98px) {
+  .page-head .page-title .title-area { margin-left: 8px; }
+  body[data-route^="Form"] .page-head, body[data-route^="Form"] .page-head .page-head-content { height: auto !important; min-height: 48px; }
+  body[data-route^="Form"] .page-head .page-head-content { padding-top: 6px; padding-bottom: 6px; }
+  body[data-route^="Form"] .page-head .page-title { flex: 1 1 0%; min-width: 0; }
+  body[data-route^="Form"] .page-head .page-title .title-area {
+    flex: 1 1 auto; min-width: 0; max-width: none; flex-wrap: wrap; align-items: center;
+    row-gap: 3px; white-space: normal; overflow: visible;
+  }
+  body[data-route^="Form"] .page-head .navbar-breadcrumbs {
+    flex: 1 0 100%; width: 100%; max-width: 100% !important; white-space: normal; overflow: hidden;
+  }
+  body[data-route^="Form"] .page-head .navbar-breadcrumbs > li:last-child { display: block; max-width: 100%; }
+  body[data-route^="Form"] .page-head .navbar-breadcrumbs .title-text-form {
+    white-space: normal; line-height: 1.25; font-size: 15px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  body[data-route^="Form"] .page-head .navbar-breadcrumbs .title-text-form::before { content: none !important; }
+  body[data-route^="Form"] .page-head .title-area .indicator-pill {
+    margin: 0 !important; width: auto !important; height: 20px; padding: 0 8px; font-size: 11px; gap: 6px; max-width: 100%; flex: 0 1 auto;
+  }
+  body[data-route^="Form"] .page-head .title-area .indicator-pill:has(> .indicator-doc-html)::after {
+    content: attr(title); position: static; display: block; width: auto; height: auto; background: none; border: 0; opacity: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}
+
+/* ---- phones: OMNI brand header ----
+   the navy rail is hidden on phones, so the page header carries the brand:
+   navy gradient, white title and icons, green accent line underneath */
+@media (max-width: 767.98px) {
+  .page-head {
+    background: var(--jb-grad) !important; border-bottom-color: transparent !important;
+    --ink-gray-5: rgba(255, 255, 255, .7); --ink-gray-7: rgba(255, 255, 255, .85);
+    --ink-gray-8: #fff; --ink-gray-9: #fff; --icon-stroke: #fff;
+    box-shadow: inset 0 -3px 0 var(--jb-accent-hi), 0 2px 8px rgba(8, 15, 35, .18) !important;
+  }
+  [data-theme="dark"] .page-head { background: linear-gradient(135deg, var(--jb-night-rail), var(--jb-night-control-2)) !important; }
+  .page-head .page-title .title-text, .page-head .page-title .title-text-form,
+  .page-head .page-title a, .page-head .page-title .ellipsis { color: #fff !important; }
+  .page-head .sidebar-toggle-btn, .page-head .sidebar-toggle-btn svg,
+  .page-head .custom-mobile-btn, .page-head .custom-mobile-btn svg { color: #fff !important; stroke: currentColor; }
+  .page-head .search-icon svg, .page-head .navbar-modal-search-mobile svg { color: #fff !important; stroke: currentColor; }
+  .page-head .search-bar .search-icon { background: rgba(255, 255, 255, .12) !important; }
+  .page-head .btn-default, .page-head .btn-secondary {
+    background: rgba(255, 255, 255, .12) !important; color: #fff !important;
+    border-color: rgba(255, 255, 255, .16) !important; box-shadow: none !important;
+  }
+  .page-head .btn-default svg, .page-head .btn-secondary svg { color: #fff; stroke: currentColor; }
+  .page-head .btn-primary, .page-head .btn.btn-primary {
+    background: linear-gradient(135deg, var(--jb-accent), var(--jb-accent-hi)) !important;
+    color: #fff !important; box-shadow: 0 2px 8px rgba(0, 0, 0, .25) !important;
+  }
+  .page-head .btn-primary svg { color: #fff; stroke: currentColor; }
+}
