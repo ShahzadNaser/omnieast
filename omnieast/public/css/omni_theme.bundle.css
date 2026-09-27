@@ -569,3 +569,189 @@ body[data-route=""] #page-desktop { background: transparent !important; }
 @media (hover: none) {
   .link-preview-popover { display: none !important; }
 }
+
+/* =====================================================================
+   Phones: one look on every company site
+   ---------------------------------------------------------------------
+   The same phone layout on all six desks (JawaHR, JawaLogistics, Jawacat,
+   OMATRA, OMNI, Motory): a JawaHR-sized brand banner with the company
+   logo, every standard filter shown in its own white card, the header
+   row and records as cards on the same edges, one scroller and no
+   scrollbars, one status-pill style, empty and Yes/No fields left out of
+   the cards, and the company mark very faint under the cards.
+   Only applies below 768px. The --pu-* values below are this site's.
+   ===================================================================== */
+:root { --pu-logo: var(--on-mark-g); --pu-mark: var(--on-mark); --pu-mark-color: #273785; --pu-accent: var(--jb-accent); --pu-accent-hi: var(--jb-accent-hi); --pu-on-accent: var(--jb-on-accent); }
+/* ---------- Phones: one look on every site -------------------------
+   Same layers everywhere: brand banner, a white filter card, the header
+   row, then each record as a white card on the grey page. The company
+   mark sits very faint on the page itself, under the cards, so it never
+   crosses any text. Needs --pu-mark (mask image) and --pu-mark-color. */
+@media (max-width: 767.98px) {
+  body { background-color: var(--bg-color); }
+  .page-container { background-color: transparent !important; }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: var(--pu-mark-color);
+    -webkit-mask: var(--pu-mark) center 58% / min(62vw, 240px) auto no-repeat;
+            mask: var(--pu-mark) center 58% / min(62vw, 240px) auto no-repeat;
+    opacity: .05;
+  }
+  body > .main-section { position: relative; z-index: 1; }
+
+  /* the list is no longer boxed in one white panel */
+  .layout-main-section.frappe-card, .layout-main-section-wrapper .layout-main-section {
+    background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important;
+  }
+  /* filters: their own white card, every standard filter shown */
+  body .layout-main-section-wrapper .layout-main-section > .page-form {
+    background: var(--fg-color) !important; border: 1px solid #dde4ee !important; border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 30, 60, .06) !important; margin: 0 0 10px !important; padding: 10px !important;
+  }
+  /* header row: its own tinted bar, same edges as the cards */
+  body .frappe-list .result .list-row-head {
+    background: #e6ecf4 !important; border: 1px solid #d6dee9 !important; border-radius: 10px; font-weight: 600; color: #3a4659;
+  }
+  body .frappe-list .result .list-row-head { padding-right: 16px !important; }
+  body .frappe-list .result .list-row-head .level-left { flex: 1 1 0% !important; min-width: 0 !important; width: auto !important; }
+  body .frappe-list .result .list-row-head .level-right { flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; position: static !important; background: transparent !important; }
+  [data-theme="dark"] body .frappe-list .result .list-row-head { background: var(--control-bg) !important; border-color: var(--border-color) !important; color: var(--text-muted); }
+  /* filter card, header row and cards share the same left and right edges */
+  body .layout-main-section > .page-form { margin-left: 0 !important; margin-right: 0 !important; }
+  body .frappe-list, body .frappe-list .result-container, body .frappe-list .result {
+    padding-left: 0 !important; padding-right: 0 !important; margin-left: 0 !important; margin-right: 0 !important;
+  }
+  body .frappe-list .result .list-row-container, body .frappe-list .result .list-row-head { margin-left: 0 !important; margin-right: 0 !important; }
+  /* no scrollbars on phones: not beside the records, not on the page */
+  html, body .main-section, body .frappe-list .result-container { scrollbar-width: none !important; }
+  html::-webkit-scrollbar, body .main-section::-webkit-scrollbar,
+  body .frappe-list .result-container::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
+  /* each record a white card */
+  body .frappe-list .result .list-row-container.list-row-container:not(:has(.list-row-head)) {
+    background: #fff !important; border: 1px solid #dde4ee !important; border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 30, 60, .06);
+  }
+  [data-theme="dark"] body .layout-main-section-wrapper .layout-main-section > .page-form,
+  [data-theme="dark"] body .frappe-list .result .list-row-container.list-row-container:not(:has(.list-row-head)) {
+    background: var(--fg-color) !important; border-color: var(--border-color) !important;
+  }
+  /* card text: title 15px semi-bold, second line muted 13px */
+  .frappe-list .result .list-row .list-subject a,
+  .frappe-list .result .list-row .list-subject .level-item.bold { font-size: 15px; font-weight: 600; }
+  .frappe-list .result .list-row .mobile-layout,
+  .frappe-list .result .list-row .mobile-layout a,
+  .frappe-list .result .list-row .mobile-layout span:not(.indicator-pill):not(.indicator) { font-size: 13px; color: var(--text-muted) !important; font-weight: 400; }
+  /* Yes/No columns show as bare checkbox squares on phones: hide them */
+  /* ...and fields with no value, which print as an empty line */
+  .frappe-list .result .list-row .mobile-layout .list-row-col:has(input[type="checkbox"]),
+  .frappe-list .result .list-row .mobile-layout .list-row-col:has(a[data-filter$=",=,"]),
+  body .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout > .list-row-col:has(input[type="checkbox"]),
+  body .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout > .list-row-col:has(a[data-filter$=",=,"]),
+  /* v16 wraps each field in its own inline block with padding, which keeps
+     a blank line open when the field is hidden: hide the block with it */
+  .frappe-list .result .list-row .level-left .mobile-layout:has(> .list-row-col input[type="checkbox"]),
+  .frappe-list .result .list-row .level-left .mobile-layout:has(> .list-row-col a[data-filter$=",=,"]),
+  body .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout:has(> .list-row-col input[type="checkbox"]),
+  body .layout-main-section .frappe-list .result-container .list-row .level-left .mobile-layout:has(> .list-row-col a[data-filter$=",=,"]) { display: none !important; }
+  /* Frappe paints a highlight box (with a soft shadow) behind the status
+     area on hover; on a phone card that reads as a patch behind the pill,
+     and a tap leaves it stuck. The card is the surface: no box. */
+  body .frappe-list .result .list-row:not(.list-row-head) .level-right,
+  body .frappe-list .result .list-row:not(.list-row-head):hover .level-right { background: transparent !important; box-shadow: none !important; }
+  /* every status the same pill: dot plus tinted background */
+  .frappe-list .result .list-row .indicator-pill {
+    border-radius: 999px; font-size: 12px; font-weight: 500; height: 22px; padding: 0 9px; gap: 6px;
+  }
+  .frappe-list .result .list-row .indicator-pill.no-indicator-dot::before {
+    content: ""; display: inline-block; flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px;
+  }
+  .frappe-list .result .list-row .indicator-pill.gray, .page-head .indicator-pill.gray { background: #eef1f5 !important; color: #4b5565 !important; }
+  .frappe-list .result .list-row .indicator-pill.black, .page-head .indicator-pill.black { background: #e6e9ef !important; color: #1f2937 !important; }
+  .frappe-list .result .list-row .indicator-pill.black::before, .page-head .indicator-pill.black::before,
+  .frappe-list .result .list-row .indicator.black::before { background: #1f2937 !important; }
+  [data-theme="dark"] .frappe-list .result .list-row .indicator-pill.gray, [data-theme="dark"] .page-head .indicator-pill.gray,
+  [data-theme="dark"] .frappe-list .result .list-row .indicator-pill.black, [data-theme="dark"] .page-head .indicator-pill.black { background: var(--control-bg) !important; color: var(--text-muted) !important; }
+  /* new-record button: the brand accent on every site */
+  .page-head .page-actions .btn-primary, .page-head .standard-actions .btn-primary {
+    background: linear-gradient(135deg, var(--pu-accent), var(--pu-accent-hi)) !important; color: var(--pu-on-accent) !important;
+    border: 0 !important; border-radius: 10px !important; box-shadow: 0 2px 8px rgba(0, 0, 0, .18) !important;
+  }
+  .page-head .page-actions .btn-primary svg, .page-head .standard-actions .btn-primary svg,
+  .page-head .page-actions .btn-primary .icon, .page-head .standard-actions .btn-primary .icon { color: var(--pu-on-accent) !important; stroke: currentColor; }
+}
+
+/* ---------- Phones (v16): two-tier brand banner, like JawaHR --------
+   Top tier (60px): the brand gradient with the company logo on the left
+   and search on the right, an accent line under it. Second tier (64px):
+   white, with the menu button, the page title and the page's actions.
+   Needs --pu-logo (logo for a dark background). */
+@media (max-width: 767.98px) {
+  body .page-head {
+    padding-top: 60px; height: auto !important;
+    background:
+      linear-gradient(var(--pu-accent-hi), var(--pu-accent-hi)) 0 60px / 100% 3px no-repeat,
+      var(--jb-grad) 0 0 / 100% 60px no-repeat,
+      var(--fg-color) !important;
+    border-bottom: 0 !important;
+    box-shadow: 0 1px 0 var(--border-color), 0 2px 8px rgba(8, 15, 35, .06) !important;
+    --ink-gray-5: var(--text-muted); --ink-gray-7: var(--text-color); --ink-gray-8: var(--heading-color); --ink-gray-9: var(--heading-color); --icon-stroke: var(--text-color);
+  }
+  [data-theme="dark"] body .page-head {
+    background:
+      linear-gradient(var(--pu-accent-hi), var(--pu-accent-hi)) 0 60px / 100% 3px no-repeat,
+      linear-gradient(135deg, var(--jb-night-rail), var(--jb-night-control-2)) 0 0 / 100% 60px no-repeat,
+      var(--fg-color) !important;
+  }
+  body .page-head::before {
+    content: ""; position: absolute; left: 16px; top: 14px; width: 44px; height: 32px; z-index: 2; pointer-events: none;
+    background: var(--pu-logo) left center / contain no-repeat;
+  }
+  body .page-head .page-head-content { min-height: 64px; height: auto !important; padding-top: 8px; padding-bottom: 8px; }
+  body .page-head .page-title .title-text, body .page-head .page-title .title-text-form,
+  body .page-head .page-title a, body .page-head .page-title .ellipsis { color: var(--heading-color) !important; }
+  body .page-head .page-title .title-text { font-size: 16px; font-weight: 700; }
+  body .page-head .sidebar-toggle-btn, body .page-head .sidebar-toggle-btn svg { color: var(--text-muted) !important; stroke: currentColor; }
+  /* search moves up into the brand tier, as on JawaHR */
+  body .page-head .search-bar { position: absolute; top: 13px; right: 16px; z-index: 2; }
+  body .page-head .search-bar .navbar-modal-search-mobile, body .page-head .search-bar .search-icon {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .2);
+  }
+  body .page-head .search-bar svg { color: #fff !important; stroke: currentColor; }
+  /* the page's own buttons sit on white again */
+  body .page-head .btn-default, body .page-head .btn-secondary {
+    background: var(--fg-color) !important; color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important; box-shadow: 0 1px 2px rgba(15, 30, 60, .06) !important; border-radius: 10px !important;
+  }
+  body .page-head .btn-default svg, body .page-head .btn-secondary svg { color: var(--text-color) !important; stroke: currentColor; }
+}
+
+/* side gutter: v16 lays the list edge to edge on phones */
+@media (max-width: 767.98px) {
+  body .layout-main-section-wrapper .layout-main-section { padding: 10px 12px 12px !important; }
+  /* the closed phone sidebar still kept a 1px column (its border) left of
+     the banner, showing as a light strip. Take it out while closed; when
+     opened, v16 turns it into an overlay, so the menu still works. */
+  body > .body-sidebar-container:not(.expanded) { flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important; overflow: hidden !important; }
+  /* one scroller: v16 gives the list box a fixed inline height, so the list
+     scrolled inside the page. Let it grow; the page scrolls, as on JawaHR. */
+  body .layout-main-section .frappe-list .result-container { height: auto !important; max-height: none !important; overflow: visible !important; }
+}
+
+/* ---------- Phones (v16): every standard filter shown ---------------
+   v16 hides the standard filters behind a toggle on phones. Show all of
+   them (two per row on a phone, three on wider ones) with the ID box
+   first, and the filter / sort buttons on the row underneath. */
+@media (max-width: 767.98px) {
+  body .layout-main-section > .page-form {
+    display: grid !important; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; align-items: center; height: auto !important;
+  }
+  body .layout-main-section > .page-form > .filter-section,
+  body .layout-main-section > .page-form > .standard-filter-section { display: contents !important; }
+  body .page-form .mobile-id-filter { order: 0; min-width: 0; }
+  body .page-form .mobile-id-filter .frappe-control { width: 100% !important; max-width: none !important; margin: 0 !important; }
+  body .page-form .standard-filter-section > .frappe-control { order: 1; margin: 0 !important; width: auto !important; max-width: none !important; min-width: 0; padding: 0 !important; }
+  body .page-form .filter-selector { order: 2; grid-column: 1; justify-self: start; margin: 0 !important; }
+  body .page-form .sort-selector { order: 3; grid-column: -2 / -1; justify-self: end; margin: 0 !important; }
+  body .page-form .filter-section .filter-toggle { display: none !important; }
+}
