@@ -755,3 +755,38 @@ body[data-route=""] #page-desktop { background: transparent !important; }
   body .page-form .sort-selector { order: 3; grid-column: -2 / -1; justify-self: end; margin: 0 !important; }
   body .page-form .filter-section .filter-toggle { display: none !important; }
 }
+
+/* ---------- Lists on desktop: one white card ------------------------
+   Filter bar, header row and records sit on one white card with rounded
+   corners instead of on the grey page. The sticky column on the right
+   (time, comments, like) takes the card's colour, and in the header row
+   it takes the header's tint with the rounded right end, so the header
+   reads as one bar even while the list scrolls sideways. */
+@media (min-width: 768px) {
+  body .layout-main-section-wrapper .layout-main-section:has(> .frappe-list) {
+    background: var(--fg-color);
+    border: 0;
+    border-radius: 14px;
+    box-shadow: var(--jb-card-shadow, 0 1px 2px rgba(15, 30, 60, .06));
+    margin-top: 12px; margin-bottom: 16px;
+  }
+  body .layout-main-section-wrapper .layout-main-section:has(> .frappe-list) > .page-form {
+    border-radius: 14px 14px 0 0;
+  }
+  body .layout-main-section-wrapper .layout-main-section:has(> .frappe-list) .list-paging-area {
+    border-radius: 0 0 14px 14px; background: transparent;
+  }
+  body .frappe-list .result .list-row-container:not(:has(.list-row-head)) .level-right {
+    background-color: var(--fg-color) !important;
+  }
+  body .frappe-list .result .list-row-container:not(:has(.list-row-head)) .list-row:hover .level-right {
+    background-color: var(--highlight-color, var(--fg-hover-color)) !important;
+  }
+  body .frappe-list .result .list-row-head .level-right {
+    background-color: var(--jb-tint) !important;
+    border-radius: 0 10px 10px 0;
+  }
+  [data-theme="dark"] body .frappe-list .result .list-row-head .level-right {
+    background-color: var(--jb-night-hover) !important;
+  }
+}
