@@ -25,7 +25,7 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "omni_theme.bundle.css"
+app_include_css = ["omni_theme.bundle.css", "omni_desk_icons.bundle.css"]
 app_include_js = ["phone_rows.bundle.js"]
 # app_include_js = "/assets/omnieast/js/omnieast.js"
 
