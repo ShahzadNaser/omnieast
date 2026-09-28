@@ -790,3 +790,73 @@ body[data-route=""] #page-desktop { background: transparent !important; }
     background-color: var(--jb-night-hover) !important;
   }
 }
+
+/* ── Phones: important fields on list rows (phone_rows JS, shared on every site) ── */
+/* --ph-indent lines the fields up under the title: 27px on v16, 40px on v15 (OMATRA), 44px on v13/v14 (set per site). */
+:root { --ph-indent: 27px; }
+@media (max-width: 767.98px) {
+	body .frappe-list .list-row .level-left:has(> .ph-meta) {
+		flex-wrap: wrap;
+	}
+	/* The title keeps its own full-width line (v13/v14 give it flex-basis 0, which squeezed it to one letter per line). */
+	body .frappe-list .list-row .level-left:has(> .ph-meta) > .list-subject {
+		flex: 1 0 100% !important;
+		max-width: 100% !important;
+	}
+	body .frappe-list .list-row .level-left > .ph-meta {
+		display: grid;
+		flex: 0 0 100%;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: 12px;
+		row-gap: 2px;
+		width: 100%;
+		max-width: 100%;
+		padding: 4px 0 0 var(--ph-indent, 27px);
+		white-space: normal;
+		font-size: 13px;
+		line-height: 1.45;
+		text-align: left;
+	}
+	body .frappe-list .list-row .ph-meta .ph-field {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		min-width: 0;
+		overflow: hidden;
+	}
+	body .frappe-list .list-row .ph-meta .ph-label {
+		flex: 0 0 auto;
+		color: var(--text-muted);
+		font-size: 12px;
+	}
+	body .frappe-list .list-row .ph-meta .ph-value {
+		flex: 1 1 auto;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--text-color);
+	}
+	/* A lone last field (odd count) uses the whole row. */
+	body .frappe-list .list-row .ph-meta > .ph-field:last-child:nth-child(odd) {
+		grid-column: 1 / -1;
+	}
+	/* Amounts, numbers and dates: never cut; if the column is too narrow the value drops under its label. */
+	body .frappe-list .list-row .ph-meta .ph-field.ph-fit {
+		flex-wrap: wrap;
+		column-gap: 6px;
+		row-gap: 0;
+		overflow: visible;
+	}
+	body .frappe-list .list-row .ph-meta .ph-field.ph-fit .ph-value {
+		flex: 0 0 auto;
+		overflow: visible;
+		text-overflow: clip;
+	}
+	body .frappe-list .list-row .ph-meta .ph-value div,
+	body .frappe-list .list-row .ph-meta .ph-value p {
+		display: inline !important;
+		margin: 0 !important;
+		text-align: left !important;
+	}
+}
