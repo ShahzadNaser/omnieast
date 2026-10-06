@@ -165,6 +165,9 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+    "daily": [
+        "omnieast.security.auto_disable.run"
+    ],
     "daily_long": [
         "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
     ],
