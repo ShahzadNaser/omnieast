@@ -291,3 +291,8 @@ override_whitelisted_methods = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+# ZATCA: zatca_erpgulf 3.0.1 sends the invoice due date as the supply date (cbc:ActualDeliveryDate),
+# so an invoice with payment terms tells ZATCA the supply happened on the due date (P36).
+# The override below makes it the posting date on every path that builds the XML.
+import omnieast.overrides.zatca_overrides  # noqa: E402,F401
