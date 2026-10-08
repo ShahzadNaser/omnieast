@@ -625,6 +625,70 @@ body[data-route=""] #page-desktop { background: transparent !important; }
   .link-preview-popover { display: none !important; }
 }
 
+/* ── Workspace shortcut pills (shared on every company site) ─────
+   Head fills the pill so the count never spills past the edge;
+   the full label shows (wraps to a second line instead of being
+   cut); even gaps round the text; one count-badge style in the
+   brand accent; pills in a row share one height. */
+.codex-editor__redactor > .ce-block:has(> .ce-block__content > div > .shortcut-widget-box),
+.codex-editor__redactor > .ce-block:has(> .ce-block__content > div > .shortcut-widget-box) > .ce-block__content,
+.codex-editor__redactor > .ce-block:has(> .ce-block__content > div > .shortcut-widget-box) > .ce-block__content > div {
+	display: flex;
+	flex-direction: column;
+}
+.codex-editor__redactor > .ce-block:has(> .ce-block__content > div > .shortcut-widget-box) > .ce-block__content,
+.codex-editor__redactor > .ce-block:has(> .ce-block__content > div > .shortcut-widget-box) > .ce-block__content > div {
+	flex: 1 1 auto;
+	align-self: stretch;
+	width: 100%;
+}
+.widget.shortcut-widget-box {
+	flex: 1 1 auto;
+	min-height: 40px;
+	padding: 8px 8px 8px 14px;
+	align-items: center;
+	border-radius: 20px;
+}
+.widget.shortcut-widget-box .widget-head {
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
+	gap: 8px;
+}
+.widget.shortcut-widget-box .widget-label { flex: 1 1 auto; min-width: 0; }
+.widget.shortcut-widget-box .widget-title .ellipsis {
+	white-space: normal;
+	overflow: visible;
+	text-overflow: clip;
+	overflow-wrap: anywhere;
+	line-height: 1.35;
+}
+.widget.shortcut-widget-box .widget-control { flex: 0 0 auto; gap: 6px; }
+.widget.shortcut-widget-box .widget-control > * { margin-left: 0 !important; }
+.widget.shortcut-widget-box .indicator-pill {
+	height: 22px;
+	max-width: none;
+	padding: 0 8px;
+	align-items: center;
+	line-height: 22px;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	background: color-mix(in srgb, var(--pu-accent, var(--primary)) 8%, #fff);
+	color: color-mix(in srgb, var(--pu-accent, var(--primary)) 82%, #000);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pu-accent, var(--primary)) 18%, transparent) !important;
+}
+.widget.shortcut-widget-box:hover .indicator-pill {
+	background: color-mix(in srgb, var(--pu-accent, var(--primary)) 16%, #fff);
+}
+[data-theme="dark"] .widget.shortcut-widget-box .indicator-pill {
+	background: color-mix(in srgb, var(--pu-accent, var(--primary)) 16%, transparent);
+	color: color-mix(in srgb, var(--pu-accent, var(--primary)) 45%, #fff);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pu-accent, var(--primary)) 32%, transparent) !important;
+}
+[data-theme="dark"] .widget.shortcut-widget-box:hover .indicator-pill {
+	background: color-mix(in srgb, var(--pu-accent, var(--primary)) 24%, transparent);
+}
+
 /* =====================================================================
    Phones: one look on every company site
    ---------------------------------------------------------------------
