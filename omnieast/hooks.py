@@ -146,6 +146,7 @@ doc_events = {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
     "Sales Invoice": {
+        "validate": "omnieast.overrides.house_account.validate",
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
     "Expense Claim": {
@@ -196,7 +197,11 @@ scheduler_events = {
 fixtures = [
     {
         "doctype": "Custom Field",
-        "filters": [["name", "in", ["Project-total_indirect_cost"]]],
+        "filters": [[
+            "name",
+            "in",
+            ["Project-total_indirect_cost", "Sales Invoice-due_date_change_reason"],
+        ]],
     },
 ]
 
