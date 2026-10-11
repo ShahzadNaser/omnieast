@@ -10,6 +10,9 @@ _original_get_result_as_list = _gl.get_result_as_list
 
 def get_columns(filters):
     columns = _original_get_columns(filters)
+    # Drop the stock Remarks column — Narration absorbs it via the fallback
+    # applied in get_result_as_list.
+    columns = [c for c in columns if c.get("fieldname") != "remarks"]
     columns.append(
         {
             "label": _("Narration"),
