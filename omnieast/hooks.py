@@ -155,6 +155,9 @@ doc_events = {
     "Asset": {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
+    "GL Entry": {
+        "before_insert": "omnieast.overrides.gl_entry.before_insert",
+    },
 	# "*": {
 	# 	"on_update": "method",
 	# 	"on_cancel": "method",
