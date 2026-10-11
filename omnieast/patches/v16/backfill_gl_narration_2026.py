@@ -2,9 +2,8 @@
 
 Follows the same per-voucher-type rules as the `before_insert` hook on GL Entry:
 Journal Entry rows match on account/cost_center/debit/credit; Purchase Invoice
-on expense_account/cost_center; Payment Entry uses `custom_remarks` only if
-the field is a text type on this install; everything else falls back to the
-voucher's header `remarks`. Cancelled rows are skipped.
+on expense_account/cost_center; everything else (incl. Payment Entry) falls
+back to the voucher's header `remarks`. Cancelled rows are skipped.
 """
 
 import frappe
@@ -15,7 +14,6 @@ YEAR = "2026"
 def execute():
 	_backfill_journal_entry()
 	_backfill_purchase_invoice()
-	_backfill_payment_entry()
 	_backfill_remaining_with_remarks()
 	frappe.db.commit()
 
@@ -72,31 +70,6 @@ def _backfill_purchase_invoice():
 		  AND gle.fiscal_year = %(year)s
 		  AND IFNULL(gle.is_cancelled, 0) = 0
 		  AND IFNULL(TRIM(gle.custom_narration), '') = ''
-		""",
-		{"year": YEAR},
-	)
-
-
-def _backfill_payment_entry():
-	meta = frappe.get_meta("Payment Entry")
-	field = meta.get_field("custom_remarks") if meta.has_field("custom_remarks") else None
-	is_text_field = bool(
-		field and field.fieldtype in ("Text", "Small Text", "Long Text", "Text Editor", "Data")
-	)
-
-	if not is_text_field:
-		return
-
-	frappe.db.sql(
-		"""
-		UPDATE `tabGL Entry` gle
-		JOIN `tabPayment Entry` pe ON pe.name = gle.voucher_no
-		SET gle.custom_narration = pe.custom_remarks
-		WHERE gle.voucher_type = 'Payment Entry'
-		  AND gle.fiscal_year = %(year)s
-		  AND IFNULL(gle.is_cancelled, 0) = 0
-		  AND IFNULL(TRIM(gle.custom_narration), '') = ''
-		  AND IFNULL(TRIM(pe.custom_remarks), '') != ''
 		""",
 		{"year": YEAR},
 	)

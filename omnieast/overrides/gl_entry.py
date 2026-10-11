@@ -31,9 +31,9 @@ def _resolve_narration(doc):
     if voucher_type == "Purchase Invoice":
         return _purchase_invoice_narration(doc) or doc.get("remarks")
 
-    if voucher_type == "Payment Entry":
-        return _payment_entry_narration(doc) or doc.get("remarks")
-
+    # Payment Entry (and everything else) uses the GL Entry's remarks, which
+    # Frappe already copies from Payment Entry.remarks — whether that remark
+    # was typed by the user (custom_remarks=1) or auto-generated.
     return doc.get("remarks")
 
 
@@ -63,23 +63,6 @@ def _purchase_invoice_narration(doc):
         pluck="description",
     )
     return ", ".join(r for r in rows if _non_empty(r))
-
-
-def _payment_entry_narration(doc):
-    # In stock ERPNext v16, Payment Entry.custom_remarks is a Check flag; the
-    # narration text sits in `remarks`. In some installs a custom text field
-    # with the same name may exist — read it only if it's a text-typed field.
-    try:
-        meta = frappe.get_meta("Payment Entry")
-    except Exception:
-        return None
-
-    field = meta.get_field("custom_remarks") if meta.has_field("custom_remarks") else None
-    if field and field.fieldtype in ("Text", "Small Text", "Long Text", "Text Editor", "Data"):
-        text = frappe.db.get_value("Payment Entry", doc.voucher_no, "custom_remarks")
-        if _non_empty(text):
-            return text
-    return None
 
 
 def _non_empty(value):
