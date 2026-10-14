@@ -1014,3 +1014,130 @@ body[data-route=""] #page-desktop { background: transparent !important; }
   body #page-desktop header.navbar .desktop-search-icon { font-size: 0 !important; gap: 0 !important; width: auto !important; }
   body #page-desktop header.navbar .desktop-search-icon svg { color: #fff !important; stroke: currentColor; width: 16px; height: 16px; }
 }
+
+/* =====================================================================
+   Frappe 16.50+ ("version-16-polished"): dock, per-module sidebar,
+   breadcrumb record title, attachment preview
+   ---------------------------------------------------------------------
+   The Oct 2026 Frappe update split the rail into an app dock plus a
+   sidebar per module, renamed the desk launcher bar, made the record
+   title the last breadcrumb and hid the status pill on phones. This
+   section carries the OMNI look onto that markup. Paint only; the
+   sidebar "Desk" item and the attachment click live in
+   desk_nav.bundle.js.
+   ===================================================================== */
+
+/* ---- dock: deep indigo column, white icons, accent on the active app ---- */
+#desk-dock, body .dock {
+  --dock-bg: var(--jb-deep);
+  --dock-ink: rgba(255, 255, 255, .74);
+  --dock-ink-strong: #ffffff;
+  --dock-tile-active: linear-gradient(90deg, rgba(86, 177, 133, .30), rgba(86, 177, 133, .08));
+  background: var(--jb-deep) !important;
+  border-right: 0 !important;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, .06);
+}
+[data-theme="dark"] #desk-dock, [data-theme="dark"] body .dock { background: var(--jb-night-rail) !important; }
+#desk-dock .dock-item { color: var(--dock-ink); border-radius: 10px; transition: background .15s ease, color .15s ease; }
+#desk-dock .dock-item:hover, #desk-dock .dock-item:focus-visible { background: rgba(255, 255, 255, .09); color: #fff; }
+#desk-dock .dock-item.active { color: #fff; box-shadow: inset 0 0 0 1px rgba(116, 199, 157, .28), inset 3px 0 0 #74c79d; }
+#desk-dock .dock-item:focus-visible { outline-color: var(--jb-accent-hi); }
+#desk-dock .dock-logo + .dock-items::before { background: rgba(255, 255, 255, .14) !important; }
+#desk-dock .dock-user .avatar-frame, #desk-dock .dock-user .standard-image { box-shadow: 0 0 0 2px var(--jb-accent-hi); }
+/* the dock logo is the way back to the desk: the OMNI mark on a white chip */
+#desk-dock .dock-logo .header-logo {
+  width: 32px; height: 32px; border-radius: 9px; overflow: hidden;
+  background: #fff var(--on-mark-g) center / 20px 26px no-repeat !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .18);
+}
+#desk-dock .dock-logo .header-logo img, #desk-dock .dock-logo .header-logo .icon-container { opacity: 0; }
+#desk-dock .dock-logo .shell-header:hover .header-logo { box-shadow: 0 0 0 2px var(--jb-accent-hi); }
+
+/* ---- sidebar "Desk" item (added by desk_nav.bundle.js): reads like the
+   Search and Notification items above the module's own list ---- */
+.body-sidebar .jb-desk-home .standard-sidebar-item { margin-bottom: 2px; }
+.body-sidebar .jb-desk-home .item-anchor { cursor: pointer; }
+
+/* ---- desk launcher bar (16.50 markup: header.desktop-navbar, search widget) ---- */
+.desktop-navbar .search-widget-wrapper .search-widget-button {
+  background: rgba(255, 255, 255, .10) !important; color: rgba(255, 255, 255, .78) !important;
+  border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: none !important; border-radius: 10px;
+  transition: background .15s ease;
+}
+.desktop-navbar .search-widget-wrapper .search-widget-button:hover { background: rgba(255, 255, 255, .16) !important; }
+.desktop-navbar .search-widget-wrapper .search-widget-button *,
+.desktop-navbar .search-widget-wrapper .search-widget-shortcut { color: rgba(255, 255, 255, .78) !important; }
+.desktop-navbar .search-widget-wrapper svg { stroke: currentColor; }
+.desktop-navbar .jb-help-home, .desktop-navbar .jb-help-home svg { color: #fff !important; stroke: currentColor; }
+
+/* ---- phones: desk launcher bar = the 60px brand banner (16.50 markup) ---- */
+@media (max-width: 767.98px) {
+  body #page-desktop header.desktop-navbar {
+    display: flex; align-items: center;
+    margin: -10px -12px 14px !important; width: auto !important; height: 63px !important; min-height: 63px;
+    padding: 0 16px 3px !important; border: 0 !important; border-radius: 0 !important; gap: 10px;
+    background:
+      linear-gradient(var(--pu-accent-hi), var(--pu-accent-hi)) 0 60px / 100% 3px no-repeat,
+      var(--jb-grad) 0 0 / 100% 60px no-repeat !important;
+    box-shadow: 0 2px 8px rgba(8, 15, 35, .10) !important;
+  }
+  [data-theme="dark"] body #page-desktop header.desktop-navbar {
+    background:
+      linear-gradient(var(--pu-accent-hi), var(--pu-accent-hi)) 0 60px / 100% 3px no-repeat,
+      linear-gradient(135deg, var(--jb-night-rail), var(--jb-night-control-2)) 0 0 / 100% 60px no-repeat !important;
+  }
+  body #page-desktop header.desktop-navbar .navbar-home {
+    flex: 0 0 44px; width: 44px; height: 32px; padding: 0 !important; margin: 0 !important;
+    background: var(--pu-logo) left center / contain no-repeat !important; box-shadow: none !important; border-radius: 0 !important;
+  }
+  body #page-desktop header.desktop-navbar .navbar-home img { opacity: 0 !important; width: 44px; height: 32px; }
+  /* search: the same round icon as the banner on every other page */
+  body #page-desktop header.desktop-navbar .search-widget-wrapper { flex: 0 0 34px; width: 34px !important; height: 34px; margin: 0 0 0 auto !important; }
+  body #page-desktop header.desktop-navbar .search-widget-button {
+    width: 34px !important; height: 34px !important; min-width: 0 !important; padding: 0 !important; border-radius: 50% !important;
+    display: flex; align-items: center; justify-content: center; font-size: 0 !important;
+    background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .2) !important;
+  }
+  body #page-desktop header.desktop-navbar .search-widget-button .search-widget-icon { font-size: 0 !important; display: flex; align-items: center; justify-content: center; width: auto !important; height: auto !important; padding: 0 !important; }
+  body #page-desktop header.desktop-navbar .search-widget-button .search-widget-shortcut { display: none !important; }
+  body #page-desktop header.desktop-navbar .search-widget-button svg { color: #fff !important; stroke: currentColor; width: 16px; height: 16px; }
+  body #page-desktop header.desktop-navbar > .flex { gap: 8px; margin-left: 0 !important; }
+}
+
+/* ---- phones: record header (16.50: the title is the last breadcrumb and
+   the status pill is hidden). Title full width, up to two lines; the
+   status under it, spelled out. ---- */
+@media (max-width: 767.98px) {
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs,
+  body[data-route^="Form"] .page-head .title-area .navbar-breadcrumbs {
+    flex: 1 0 100%; width: 100%; max-width: 100% !important; white-space: normal; overflow: visible;
+  }
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs ol { display: block; max-width: 100%; }
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs li:last-child { display: block; max-width: 100% !important; }
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs li:last-child .es-breadcrumbs__item,
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs li:last-child .es-breadcrumbs__label {
+    display: block; max-width: 100% !important; white-space: normal; overflow: visible; text-overflow: clip;
+    font-size: 15px; font-weight: 700; line-height: 1.25; color: var(--heading-color) !important; padding: 0;
+  }
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs li:last-child .es-breadcrumbs__label {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  body[data-route^="Form"] .page-head .title-area .es-breadcrumbs li:last-child::before { content: none !important; }
+  body[data-route^="Form"] .page-head .title-area .page-indicator-pill {
+    display: inline-flex !important; visibility: visible !important; opacity: 1 !important;
+    align-items: center; gap: 6px; margin: 0 !important; width: auto !important; height: 20px; padding: 0 8px;
+    font-size: 11px; font-weight: 500; border-radius: 999px; max-width: 100%; flex: 0 1 auto;
+  }
+  body[data-route^="Form"] .page-head .title-area .page-indicator-pill .indicator-doc-html {
+    width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; margin: 0;
+  }
+  body[data-route^="Form"] .page-head .title-area .page-indicator-pill::after {
+    content: attr(title); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* forms carry a hidden .page-form; the phone filter-card rule must not
+     bring it back as an empty white bar under the title */
+  body .layout-main-section > .page-form.hide { display: none !important; }
+  /* the tab chips scroll sideways on phones; no scrollbar line under them */
+  body .form-tabs-list .form-tabs { scrollbar-width: none !important; }
+  body .form-tabs-list .form-tabs::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
+}
