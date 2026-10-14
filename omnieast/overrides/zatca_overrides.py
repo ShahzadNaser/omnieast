@@ -44,3 +44,6 @@ def delivery_and_payment_means(invoice, sales_invoice_doc, is_return):
 
 for _module in (createxml, sign_invoice, sales_invoice_withoutxml, zatca_background_sched, debug_xml):
     _module.delivery_and_payment_means = delivery_and_payment_means
+
+# BR-KSA-F-08: leave out an empty or "0" buyer ID instead of sending CRN = 0.
+import omnieast.overrides.zatca_buyer_id  # noqa: E402,F401
