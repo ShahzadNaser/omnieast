@@ -121,11 +121,24 @@ def sync(attendance=None):
 	}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def sync_att_time(time=False):
-	"""Enqueue background job that turns Attendance Time rows into Employee Checkin."""
+	"""Enqueue background job that turns Attendance Time rows into Employee Checkin.
+
+	Run every 10 minutes by the scheduler (hooks.py). Nothing is queued while no punch is
+	waiting to be processed.
+	"""
+	if not _has_pending_punches():
+		return True
 	frappe.enqueue(method="omnieast.api.attendance.mark_checkins", queue="long", timeout=1600)
 	return True
+
+
+def _has_pending_punches():
+	"""True while an Attendance Time row is waiting for mark_checkins (the same filter it uses)."""
+	return bool(
+		frappe.db.exists("Attendance Time", {"status": ["!=", "Success"], "error_counter": ["<", 2]})
+	)
 
 
 @frappe.whitelist()
