@@ -230,6 +230,8 @@ extend_doctype_class = {
 	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin",
     "Workspace Sidebar": "omnieast.overrides.workspace_sidebar.CustomWorkspaceSidebar",
     "Project": "omnieast.overrides.project.CustomProjectMixin",
+    # ISS-2026-00130: Resume Duty Request on return from leave
+    "Leave Application": "omnieast.overrides.resume_duty.LeaveApplicationResumeDutyMixin",
 }
 
 # Overriding Methods
