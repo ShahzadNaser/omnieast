@@ -8,6 +8,104 @@ import json
 
 import frappe
 from frappe import _
+from frappe.utils import cstr, get_datetime
+
+
+class InvalidPunch(Exception):
+	"""A punch that fails a check; its message is returned for that row."""
+
+
+def _parse_reference_id(value):
+	"""Positive whole number, or None."""
+	try:
+		number = int(cstr(value).strip())
+	except ValueError:
+		return None
+	return number if number > 0 else None
+
+
+def _get_employees(attendance_list):
+	"""{payload employee value: Employee}, matched on Attendance Device ID first and then on
+	Employee ID, the same order mark_checkins uses."""
+	codes = list({
+		cstr(att.get("employee")).strip()
+		for att in attendance_list
+		if isinstance(att, dict) and cstr(att.get("employee")).strip()
+	})
+	if not codes:
+		return {}
+
+	employees = {
+		row.name: row
+		for row in frappe.get_all("Employee", filters={"name": ["in", codes]}, fields=["name", "status"])
+	}
+	by_device = {}
+	for row in frappe.get_all(
+		"Employee",
+		filters={"attendance_device_id": ["in", codes]},
+		fields=["name", "status", "attendance_device_id"],
+	):
+		# an Active employee wins over an old record that kept the same device ID
+		current = by_device.get(row.attendance_device_id)
+		if not current or (row.status == "Active" and current.status != "Active"):
+			by_device[row.attendance_device_id] = row
+	employees.update(by_device)
+	return employees
+
+
+def _get_stored_reference_ids(attendance_list):
+	"""The reference_ids of this batch that are already stored in Attendance Time."""
+	reference_ids = {
+		_parse_reference_id(att.get("reference_id")) for att in attendance_list if isinstance(att, dict)
+	}
+	reference_ids.discard(None)
+	if not reference_ids:
+		return set()
+	return set(
+		frappe.get_all(
+			"Attendance Time",
+			filters={"reference_id": ["in", list(reference_ids)]},
+			pluck="reference_id",
+		)
+	)
+
+
+def _validate_punch(att, employees, stored_reference_ids):
+	"""Attendance Time values for a valid punch; raises InvalidPunch otherwise."""
+	if not isinstance(att, dict):
+		raise InvalidPunch(_("Invalid punch record."))
+
+	employee = cstr(att.get("employee")).strip()
+	if not employee or employee not in employees:
+		raise InvalidPunch(_("Employee {0} not found.").format(employee or "-"))
+	if employees[employee].status != "Active":
+		raise InvalidPunch(_("Employee {0} is not Active.").format(employee))
+
+	reference_id = _parse_reference_id(att.get("reference_id"))
+	if not reference_id:
+		raise InvalidPunch(_("reference_id must be a positive whole number."))
+	if reference_id in stored_reference_ids:
+		raise InvalidPunch(_("reference_id {0} is already stored.").format(reference_id))
+
+	check_time = None
+	if att.get("check_time"):
+		try:
+			check_time = get_datetime(att.get("check_time"))
+		except Exception:
+			check_time = None
+	if not check_time:
+		raise InvalidPunch(_("check_time must be a date and time (YYYY-MM-DD HH:MM:SS)."))
+
+	device_id = cstr(att.get("device_id")).strip()
+	if not device_id:
+		raise InvalidPunch(_("device_id is required."))
+
+	return {
+		"employee": employee,
+		"check_time": check_time,
+		"device_id": device_id,
+		"reference_id": reference_id,
+	}
 
 
 @frappe.whitelist(allow_guest=False)
@@ -23,6 +121,11 @@ def sync(attendance=None):
 	     "reference_id": <int>}
 	  ]
 	}
+
+	Each punch is checked on its own: the employee must exist and be Active, the reference_id
+	must not be stored yet and check_time must be a valid date and time. A valid punch is saved
+	as an Attendance Time record (status Pending); a punch that fails is answered FAILED with a
+	"message", and the other punches of the batch are still saved.
 	"""
 	has_error = False
 
@@ -39,7 +142,7 @@ def sync(attendance=None):
 			"message": _("Invalid JSON payload.")
 		}
 
-	attendance_list = body.get("attendance_list", [])
+	attendance_list = body.get("attendance_list", []) if isinstance(body, dict) else []
 
 	if not attendance_list:
 		return {
@@ -48,72 +151,67 @@ def sync(attendance=None):
 			"processed_records": []
 		}
 
-	now = frappe.utils.now_datetime()
-	owner = frappe.session.user
+	if not frappe.has_permission("Attendance Time", "create"):
+		return {
+			"error": True,
+			"message": _("Not permitted to create Attendance Time."),
+			"processed_records": []
+		}
 
-	insert_data = []
+	employees = _get_employees(attendance_list)
+	stored_reference_ids = _get_stored_reference_ids(attendance_list)
+
 	processed_records = []
+	saved = False
 
 	for att in attendance_list:
+		reference_id = att.get("reference_id") if isinstance(att, dict) else None
+
 		try:
-			attendance_time_id = frappe.generate_hash(length=10)
-
-			insert_data.append((
-				attendance_time_id,
-				att.get("employee"),
-				frappe.utils.get_datetime(att.get("check_time")),
-				"Pending",
-				att.get("device_id"),
-				att.get("reference_id"),
-				now,
-				now,
-				owner,
-			))
-
-			processed_records.append({
-				"reference_id": att.get("reference_id"),
-				"status": "SUCCESS",
-				"attendance_id": attendance_time_id
-			})
-
-		except Exception:
+			punch = _validate_punch(att, employees, stored_reference_ids)
+		except InvalidPunch as e:
 			has_error = True
-
 			processed_records.append({
-				"reference_id": att.get("reference_id"),
+				"reference_id": reference_id,
 				"status": "FAILED",
-				"attendance_id": None
+				"attendance_id": None,
+				"message": str(e)
 			})
+			continue
 
-			frappe.log_error(
-				frappe.get_traceback(),
-				f"Attendance API - Failed to prepare record ({att.get('reference_id')})"
-			)
-
-	if insert_data:
 		try:
-			frappe.db.sql("""
-				INSERT INTO `tabAttendance Time`
-				(`name`, `employee`, `check_time`, `status`,
-				 `device_id`, `reference_id`,
-				 `creation`, `modified`, `owner`)
-				VALUES {}
-			""".format(", ".join(["%s"] * len(insert_data))), tuple(insert_data))
-
-			frappe.db.commit()
-
-		except Exception:
+			frappe.db.savepoint("attendance_punch")
+			doc = frappe.get_doc({"doctype": "Attendance Time", "status": "Pending", **punch}).insert()
+		except Exception as e:
+			frappe.db.rollback(save_point="attendance_punch")
+			frappe.clear_messages()
 			has_error = True
+			if isinstance(e, frappe.ValidationError):
+				message = cstr(e) or _("Invalid punch.")
+			else:
+				message = _("Could not save this punch; see the Error Log.")
+				frappe.log_error(
+					frappe.get_traceback(),
+					f"Attendance API - Failed to save record ({reference_id})"
+				)
+			processed_records.append({
+				"reference_id": reference_id,
+				"status": "FAILED",
+				"attendance_id": None,
+				"message": message
+			})
+			continue
 
-			frappe.log_error(
-				frappe.get_traceback(),
-				"Attendance API - Bulk Insert Failed"
-			)
+		saved = True
+		stored_reference_ids.add(punch["reference_id"])
+		processed_records.append({
+			"reference_id": reference_id,
+			"status": "SUCCESS",
+			"attendance_id": doc.name
+		})
 
-			for record in processed_records:
-				if record["status"] == "SUCCESS":
-					record["status"] = "FAILED"
-					record["attendance_id"] = None
+	if saved:
+		frappe.db.commit()
 
 	return {
 		"error": has_error,
