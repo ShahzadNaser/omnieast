@@ -135,7 +135,16 @@ doctype_js = {"Payment Request": "public/js/payment_request.js"}  # JHR/HT/00615
 
 doc_events = {
     "Leave Application": {
-        "on_submit": "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request"
+        # ISS-2026-00130: weekend inside leave, switched on in HR Settings > Leaves
+        "before_validate": "omnieast.overrides.weekend_leave.before_validate",
+        "validate": "omnieast.overrides.weekend_leave.validate",
+        "on_submit": [
+            "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request",
+            "omnieast.overrides.weekend_leave.on_submit",
+        ],
+    },
+    "HR Settings": {
+        "validate": "omnieast.overrides.weekend_leave.validate_hr_settings",
     },
     "Journal Entry": {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
@@ -227,7 +236,9 @@ extend_doctype_class = {
 # ------------------------------
 #
 override_whitelisted_methods = {
-	"hrms.hr.doctype.leave_application.leave_application.get_leave_details": "omnieast.overrided_whitelisted.leave_application.get_leave_details"
+	"hrms.hr.doctype.leave_application.leave_application.get_leave_details": "omnieast.overrided_whitelisted.leave_application.get_leave_details",
+	# ISS-2026-00130: the form's leave-day count includes the weekend while the HR Settings switch is on
+	"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days": "omnieast.overrided_whitelisted.leave_application.get_number_of_leave_days",
 }
 #
 # each overriding function accepts a `data` argument;

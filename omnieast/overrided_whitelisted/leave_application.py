@@ -11,8 +11,11 @@ from hrms.hr.doctype.leave_application.leave_application import (
 	get_leave_balance_on,
 	get_leaves_for_period,
 	get_leaves_pending_approval_for_period,
-	get_leave_approver
+	get_leave_approver,
+	get_number_of_leave_days as hrms_get_number_of_leave_days,
 )
+
+from omnieast.overrides.weekend_leave import get_weekend_days_to_add
 
 @frappe.whitelist()
 def get_leave_details(employee: str, date: str | datetime.date, for_salary_slip: bool = False) -> dict:
@@ -56,3 +59,28 @@ def get_leave_details(employee: str, date: str | datetime.date, for_salary_slip:
 		"leave_approver": get_leave_approver(employee),
 		"lwps": lwp,
 	}
+
+
+@frappe.whitelist()
+def get_number_of_leave_days(
+	employee: str,
+	leave_type: str,
+	from_date: datetime.date,
+	to_date: datetime.date,
+	half_day: int | str | None = None,
+	half_day_date: datetime.date | str | None = None,
+	holiday_list: str | None = None,
+	leave_application: str | None = None,
+) -> float:
+	"""HRMS leave-day count, plus the weekend days counted while HR Settings > Count Weekends as Leave Days is on (ISS-2026-00130)."""
+	number_of_days = hrms_get_number_of_leave_days(
+		employee,
+		leave_type,
+		from_date,
+		to_date,
+		half_day=half_day,
+		half_day_date=half_day_date,
+		holiday_list=holiday_list,
+		leave_application=leave_application,
+	)
+	return flt(number_of_days) + get_weekend_days_to_add(employee, leave_type, from_date, to_date)
