@@ -137,10 +137,15 @@ doc_events = {
     "Leave Application": {
         # ISS-2026-00130: weekend inside leave, switched on in HR Settings > Leaves
         "before_validate": "omnieast.overrides.weekend_leave.before_validate",
-        "validate": "omnieast.overrides.weekend_leave.validate",
+        "validate": [
+            "omnieast.overrides.weekend_leave.validate",
+            # Annual Leave: weekends count, public holidays do not
+            "omnieast.overrides.annual_leave_days.validate",
+        ],
         "on_submit": [
             "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request",
             "omnieast.overrides.weekend_leave.on_submit",
+            "omnieast.overrides.annual_leave_days.on_submit",
         ],
     },
     "HR Settings": {
