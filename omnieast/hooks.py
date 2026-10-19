@@ -184,7 +184,9 @@ doc_events = {
 
 scheduler_events = {
     "daily": [
-        "omnieast.security.auto_disable.run"
+        "omnieast.security.auto_disable.run",
+        # ISS-2026-00139: contract-end and probation-end approvals, 2 months and 1 month before
+        "omnieast.omnieast.doctype.employee_contract_review.employee_contract_review.send_reminders",
     ],
     "daily_long": [
         "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
