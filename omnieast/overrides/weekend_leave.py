@@ -110,6 +110,10 @@ def get_weekend_days_to_add(employee, leave_type, from_date, to_date):
 		return 0
 	if not (rule_applies(leave_type) and is_enabled()):
 		return 0
+	from omnieast.overrides.annual_leave_days import applies as annual_leave_applies
+	if annual_leave_applies(leave_type):
+		# Annual Leave already counts its weekends (annual_leave_days.py)
+		return 0
 	if cint(frappe.get_cached_value("Leave Type", leave_type, "include_holiday")):
 		# HRMS already counts every holiday inside a leave of this type
 		return 0
