@@ -1,0 +1,290 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-10-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "review_type",
+  "employee",
+  "employee_name",
+  "designation",
+  "department",
+  "company",
+  "column_break_dates",
+  "end_date",
+  "date_of_joining",
+  "status",
+  "line_manager_section",
+  "line_manager",
+  "line_manager_name",
+  "line_manager_user",
+  "column_break_line_manager",
+  "line_manager_decision",
+  "line_manager_decided_on",
+  "hr_section",
+  "hr_decision",
+  "hr_decided_by",
+  "hr_decided_on",
+  "column_break_hr",
+  "new_contract_end_date",
+  "remarks_section",
+  "remarks",
+  "column_break_reminders",
+  "first_reminder_on",
+  "second_reminder_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "ECR-.YYYY.-",
+   "default": "ECR-.YYYY.-",
+   "hidden": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "review_type",
+   "fieldtype": "Select",
+   "label": "Review Type",
+   "options": "Contract End\nProbation End",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "description": "Contract end date or probation end date."
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Line Manager\nPending HR\nRenewed\nConfirmed\nEnded\nCancelled",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "line_manager_section",
+   "fieldtype": "Section Break",
+   "label": "Line Manager"
+  },
+  {
+   "fieldname": "line_manager",
+   "fieldtype": "Link",
+   "label": "Line Manager",
+   "options": "Employee",
+   "read_only": 1,
+   "description": "Employee > Reports To when the review was opened."
+  },
+  {
+   "fieldname": "line_manager_name",
+   "fieldtype": "Data",
+   "label": "Line Manager Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "line_manager_user",
+   "fieldtype": "Link",
+   "label": "Line Manager User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_line_manager",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "line_manager_decision",
+   "fieldtype": "Select",
+   "label": "Line Manager Decision",
+   "options": "\nRenew / Confirm\nEnd",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "line_manager_decided_on",
+   "fieldtype": "Datetime",
+   "label": "Line Manager Decided On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "hr_section",
+   "fieldtype": "Section Break",
+   "label": "HR Approval"
+  },
+  {
+   "fieldname": "hr_decision",
+   "fieldtype": "Select",
+   "label": "HR Decision",
+   "options": "\nRenew / Confirm\nEnd",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "hr_decided_by",
+   "fieldtype": "Link",
+   "label": "HR Decided By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "hr_decided_on",
+   "fieldtype": "Datetime",
+   "label": "HR Decided On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_hr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_contract_end_date",
+   "fieldtype": "Date",
+   "label": "New Contract End Date",
+   "depends_on": "eval:doc.review_type==\"Contract End\"",
+   "no_copy": 1,
+   "description": "For a renewal: written to the employee record when HR approves."
+  },
+  {
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "column_break_reminders",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "first_reminder_on",
+   "fieldtype": "Date",
+   "label": "Two-Month Reminder Sent On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "second_reminder_on",
+   "fieldtype": "Date",
+   "label": "One-Month Reminder Sent On",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Omnieast",
+ "name": "Employee Contract Review",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "HR Manager"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "HR User"
+  }
+ ],
+ "search_fields": "employee_name,review_type,status",
+ "sort_field": "end_date",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "employee_name",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field",
+ "grid_page_length": 50,
+ "row_format": "Dynamic"
+}
