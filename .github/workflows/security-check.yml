@@ -1,0 +1,31 @@
+name: Security check (warn only)
+
+# Flags whitelisted functions with no permission check, SQL built from strings and
+# secrets in code, on the Python lines a pull request changes. WARN ONLY: findings show
+# as warnings on the pull request and the check never fails, so it never holds up a
+# merge. Do not add it to the required status checks.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-check-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  security-check:
+    name: Security check (warn only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan changed Python code
+        continue-on-error: true
+        run: python3 ci/security_check.py "origin/${{ github.base_ref }}" HEAD
