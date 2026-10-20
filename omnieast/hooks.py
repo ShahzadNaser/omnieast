@@ -46,7 +46,7 @@ app_include_js = ["phone_rows.bundle.js", "help_link.bundle.js", "breadcrumbs.bu
 # include js in doctype views
 doctype_js = {"Payment Request": "public/js/payment_request.js"}  # JHR/HT/00615
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
-# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
+doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the top company line in the tree
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
 # Svg Icons
