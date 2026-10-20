@@ -29,6 +29,8 @@
   "hr_decided_on",
   "column_break_hr",
   "new_contract_end_date",
+  "extend_months",
+  "new_probation_end_date",
   "remarks_section",
   "remarks",
   "column_break_reminders",
@@ -116,7 +118,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending Line Manager\nPending HR\nRenewed\nConfirmed\nEnded\nCancelled",
+   "options": "Pending Line Manager\nPending HR\nRenewed\nConfirmed\nExtended\nEnded\nCancelled",
    "read_only": 1,
    "no_copy": 1,
    "in_list_view": 1,
@@ -157,7 +159,7 @@
    "fieldname": "line_manager_decision",
    "fieldtype": "Select",
    "label": "Line Manager Decision",
-   "options": "\nRenew / Confirm\nEnd",
+   "options": "\nRenew / Confirm\nEnd\nExtend",
    "read_only": 1,
    "no_copy": 1
   },
@@ -177,7 +179,7 @@
    "fieldname": "hr_decision",
    "fieldtype": "Select",
    "label": "HR Decision",
-   "options": "\nRenew / Confirm\nEnd",
+   "options": "\nRenew / Confirm\nEnd\nExtend",
    "read_only": 1,
    "no_copy": 1
   },
@@ -204,9 +206,25 @@
    "fieldname": "new_contract_end_date",
    "fieldtype": "Date",
    "label": "New Contract End Date",
-   "depends_on": "eval:doc.review_type==\"Contract End\"",
-   "no_copy": 1,
-   "description": "For a renewal: written to the employee record when HR approves."
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "extend_months",
+   "fieldtype": "Select",
+   "label": "Extend Probation By (Months)",
+   "options": "\n1\n2\n3\n6",
+   "depends_on": "eval:doc.review_type==\"Probation End\" && doc.extend_months",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "new_probation_end_date",
+   "fieldtype": "Date",
+   "label": "New Probation End Date",
+   "depends_on": "eval:doc.new_probation_end_date",
+   "read_only": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "remarks_section",
@@ -238,7 +256,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-19 12:00:00.000000",
+ "modified": "2026-10-20 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Omnieast",
  "name": "Employee Contract Review",

@@ -20,6 +20,9 @@ frappe.ui.form.on("Employee Contract Review", {
 			: [__("Renew contract"), __("End contract")];
 
 		frm.add_custom_button(labels[0], () => ecr_decide(frm, "Renew / Confirm", labels[0], is_line_manager), __("Decide"));
+		if (probation) {
+			frm.add_custom_button(__("Extend probation"), () => ecr_decide(frm, "Extend", __("Extend probation"), is_line_manager), __("Decide"));
+		}
 		frm.add_custom_button(labels[1], () => ecr_decide(frm, "End", labels[1], is_line_manager), __("Decide"));
 
 		if (is_hr) {
@@ -30,13 +33,21 @@ frappe.ui.form.on("Employee Contract Review", {
 
 function ecr_decide(frm, decision, label, is_line_manager) {
 	const fields = [];
-	if (!is_line_manager && decision === "Renew / Confirm" && frm.doc.review_type === "Contract End") {
+	if (decision === "Extend") {
 		fields.push({
-			fieldname: "new_contract_end_date",
-			fieldtype: "Date",
-			label: __("New Contract End Date"),
-			default: frm.doc.new_contract_end_date,
-			description: __("Written to the employee record. Leave empty to update the employee yourself."),
+			fieldname: "extend_months",
+			fieldtype: "Select",
+			label: __("Extend By (Months)"),
+			options: ["1", "2", "3", "6"],
+			default: frm.doc.extend_months || "3",
+			reqd: 1,
+		});
+	}
+	if (decision === "Renew / Confirm" && frm.doc.review_type === "Contract End") {
+		fields.push({
+			fieldname: "renewal_note",
+			fieldtype: "HTML",
+			options: `<p class="text-muted small">${__("This only records the decision. HR updates the new contract end date on the employee once Qiwa is done.")}</p>`,
 		});
 	}
 	fields.push({ fieldname: "remarks", fieldtype: "Small Text", label: __("Remarks") });
@@ -50,7 +61,7 @@ function ecr_decide(frm, decision, label, is_line_manager) {
 					name: frm.doc.name,
 					decision: decision,
 					remarks: values.remarks,
-					new_contract_end_date: values.new_contract_end_date,
+					extend_months: values.extend_months,
 				},
 				freeze: true,
 				callback: () => frm.reload_doc(),
