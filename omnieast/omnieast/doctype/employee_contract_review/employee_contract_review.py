@@ -3,9 +3,9 @@
 
 """Employee Contract Review (ISS-2026-00139): contract-ending and probation-ending approvals.
 
-A daily job opens one review per employee two months before the contract end date and two months
-before the probation end date, and sends a reminder one month before while the review is still
-open. The line manager (Employee > Reports To) chooses renew/confirm or end; HR then approves.
+A daily job opens one review per employee 2.5 months (75 days) before the contract end date and
+2 weeks before the probation end date (180 days from joining; no extension), and sends a follow-up
+(30 days / 7 days before) while the review is still open. The line manager (Employee > Reports To) chooses renew/confirm or end; HR then approves.
 Without a line manager the review goes straight to HR. Both act from the email buttons (each
 button opens a confirmation page first) or from the review form.
 
@@ -82,6 +82,13 @@ DEFAULT_BRAND = "Omni East Company"
 # ------
 
 DOCTYPE = "Employee Contract Review"
+# When reviews open, and the follow-up while no decision is made (days before the end date)
+CONTRACT_OPEN_DAYS = 75
+CONTRACT_FOLLOW_UP_DAYS = 30
+PROBATION_OPEN_DAYS = 14
+PROBATION_FOLLOW_UP_DAYS = 7
+# Every contract carries a 180-day probation (day 1 = date of joining); the law allows no extension
+PROBATION_DAYS = 180
 CONTRACT_END = "Contract End"
 PROBATION_END = "Probation End"
 PENDING_LINE_MANAGER = "Pending Line Manager"
@@ -91,7 +98,8 @@ OPEN_STATUSES = [PENDING_LINE_MANAGER, PENDING_HR]
 RENEW = "Renew / Confirm"
 END = "End"
 EXTEND = "Extend"
-DECISIONS = (RENEW, END, EXTEND)
+# no probation extensions: the law allows none after the 180 days
+DECISIONS = (RENEW, END)
 EXTENDED = "Extended"
 # probation extension choices, in months
 EXTEND_MONTHS = ("1", "2", "3", "6")
@@ -119,8 +127,8 @@ class EmployeeContractReview(Document):
 
 		send_stage_emails(self)
 		self.db_set("first_reminder_on", today(), update_modified=False)
-		if getdate(self.end_date) <= getdate(add_months(today(), 1)):
-			# opened inside the last month: this first email is also the one-month reminder
+		if getdate(self.end_date) <= getdate(add_days(today(), follow_up_days(self.review_type))):
+			# opened inside the follow-up window: this first email is also the follow-up
 			self.db_set("second_reminder_on", today(), update_modified=False)
 
 	def validate_closed(self):
@@ -372,14 +380,14 @@ def action_url(doc, decision, user, method="email_action"):
 
 
 def send_reminders():
-	"""Daily: open reviews two months before the end date, remind one month before."""
+	"""Daily: open reviews 75 days before contract end / 14 days before probation end, then follow up."""
 	if not get_hr_approvers():
 		return  # nobody to approve: set the HR approvers in HR Settings > Contract and Probation Approvals
 
-	start, horizon = add_days(today(), 1), add_months(today(), 2)
-	for employee, end_date in get_contracts_ending(start, horizon):
+	start = add_days(today(), 1)
+	for employee, end_date in get_contracts_ending(start, add_days(today(), CONTRACT_OPEN_DAYS)):
 		open_review(employee, CONTRACT_END, end_date)
-	for employee, end_date in get_probations_ending(start, horizon):
+	for employee, end_date in get_probations_ending(start, add_days(today(), PROBATION_OPEN_DAYS)):
 		open_review(employee, PROBATION_END, end_date)
 
 	send_one_month_reminders()
@@ -410,10 +418,18 @@ def get_probations_ending(start, end):
 	rows = frappe.get_all("Employee", filters=filters, fields=fields, limit_page_length=JOB_LIMIT)
 
 	start, end = getdate(start), getdate(end)
-	extended = extended_probations([row.name for row in rows])
+	names = [row.name for row in rows]
+	# one probation review per employee: skip anyone who already has one
+	reviewed = set(frappe.get_all(
+		DOCTYPE,
+		filters={"employee": ["in", names or [""]], "review_type": PROBATION_END, "status": ["!=", CANCELLED]},
+		pluck="employee",
+	))
 	result = []
 	for row in rows:
-		end_date = extended.get(row.name) or probation_end_date(row)
+		if row.name in reviewed:
+			continue
+		end_date = probation_end_date(row)
 		if end_date and start <= end_date <= end:
 			result.append((row.name, end_date))
 	return result
@@ -422,15 +438,12 @@ def get_probations_ending(start, end):
 def probation_end_date(row):
 	if not row.date_of_joining:
 		return None
-	if (
-		USE_CONFIRMATION_DATE
-		and row.get("final_confirmation_date")
-		and getdate(row.final_confirmation_date) > getdate(row.date_of_joining)
-	):
-		return getdate(row.final_confirmation_date)
+	# 180 days for everyone, whatever probation length is on the employee
+	return getdate(add_days(row.date_of_joining, PROBATION_DAYS - 1))
 
-	months = cint(row.get(PROBATION_MONTHS_FIELD)) if PROBATION_MONTHS_FIELD else 0
-	return getdate(add_months(row.date_of_joining, months or DEFAULT_PROBATION_MONTHS))
+
+def follow_up_days(review_type):
+	return PROBATION_FOLLOW_UP_DAYS if review_type == PROBATION_END else CONTRACT_FOLLOW_UP_DAYS
 
 
 def extended_probations(employees):
@@ -466,16 +479,19 @@ def open_review(employee, review_type, end_date):
 
 
 def send_one_month_reminders():
-	reviews = frappe.get_all(
-		DOCTYPE,
-		filters={
-			"status": ["in", OPEN_STATUSES],
-			"end_date": ["between", [today(), add_months(today(), 1)]],
-			"second_reminder_on": ["is", "not set"],
-		},
-		fields=["name"],
-		limit_page_length=JOB_LIMIT,
-	)
+	reviews = []
+	for review_type in (CONTRACT_END, PROBATION_END):
+		reviews += frappe.get_all(
+			DOCTYPE,
+			filters={
+				"review_type": review_type,
+				"status": ["in", OPEN_STATUSES],
+				"end_date": ["between", [today(), add_days(today(), follow_up_days(review_type))]],
+				"second_reminder_on": ["is", "not set"],
+			},
+			fields=["name"],
+			limit_page_length=JOB_LIMIT,
+		)
 	for review in reviews:
 		try:
 			doc = frappe.get_doc(DOCTYPE, review.name)
@@ -561,7 +577,7 @@ def send_stage_emails(doc, reminder=False):
 
 	if doc.status == PENDING_LINE_MANAGER and doc.line_manager_user:
 		choice = (
-			_("Confirm the employee, extend the probation (on the review), or end the employment.")
+			_("Confirm the employee or end the employment.")
 			if doc.review_type == PROBATION_END
 			else _("Renew the contract or end it.")
 		)
@@ -603,13 +619,6 @@ def send_stage_emails(doc, reminder=False):
 
 def send_action_email(doc, user, subject, intro, cc=None):
 	actions = [(decision_label(doc.review_type, RENEW), action_url(doc, RENEW, user), "ok")]
-	if doc.review_type == PROBATION_END:
-		if doc.status == PENDING_HR and doc.line_manager_decision == EXTEND and doc.extend_months:
-			# HR approves the line manager's extension straight from the email
-			actions.append((decision_label(doc.review_type, EXTEND, doc.extend_months), action_url(doc, EXTEND, user), "ok"))
-		else:
-			# the extension length is chosen on the review
-			actions.append((decision_label(doc.review_type, EXTEND), get_url_to_form(DOCTYPE, doc.name), "link"))
 	actions.append((decision_label(doc.review_type, END), action_url(doc, END, user), "bad"))
 	note = None
 	if doc.review_type == CONTRACT_END:

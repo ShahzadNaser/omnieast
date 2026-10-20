@@ -20,9 +20,6 @@ frappe.ui.form.on("Employee Contract Review", {
 			: [__("Renew contract"), __("End contract")];
 
 		frm.add_custom_button(labels[0], () => ecr_decide(frm, "Renew / Confirm", labels[0], is_line_manager), __("Decide"));
-		if (probation) {
-			frm.add_custom_button(__("Extend probation"), () => ecr_decide(frm, "Extend", __("Extend probation"), is_line_manager), __("Decide"));
-		}
 		frm.add_custom_button(labels[1], () => ecr_decide(frm, "End", labels[1], is_line_manager), __("Decide"));
 
 		if (is_hr) {
