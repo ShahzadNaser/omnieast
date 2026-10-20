@@ -12,8 +12,8 @@ button opens a confirmation page first) or from the review form.
 OMNI: the contract end date is Employee > Contract End Date; the probation end date is Employee >
 Confirmation Date when set, otherwise 3 months (90 days) from the date of joining.
 
-On HR approval: a renewal with a New Contract End Date writes that date to the employee; a
-probation confirmation sets the employee's Confirmation Date when it is empty. Ending a contract
+On HR approval: a renewal only records the decision (HR sets the new end date from Qiwa); an
+extension moves the probation end date by 1, 2, 3 or 6 months; a probation confirmation sets the employee's Confirmation Date when it is empty. Ending a contract
 or employment only records the decision; HR runs the separation as usual.
 """
 
@@ -42,9 +42,11 @@ COMPANIES = []
 # HR approvers: user IDs in this settings field; HR_DEFAULT when it is empty
 SETTINGS_DOCTYPE = "HR Settings"
 HR_FIELD = "custom_contract_review_hr_recipients"
-HR_DEFAULT = []
+HR_DEFAULT = ["fahad.t@ssc-fm.com"]
 # Also tell HR when the line manager is asked (False where HR already gets reminder Notifications)
 SEND_HR_HEADS_UP = True
+# HR head, cc'd on every email to the line manager and on every decision email
+HR_CC = ["fahad.t@ssc-fm.com"]
 
 ERP_NAME = "OMNI East ERP"
 SITE = "omnieast.k.frappe.cloud"
@@ -88,7 +90,11 @@ CANCELLED = "Cancelled"
 OPEN_STATUSES = [PENDING_LINE_MANAGER, PENDING_HR]
 RENEW = "Renew / Confirm"
 END = "End"
-DECISIONS = (RENEW, END)
+EXTEND = "Extend"
+DECISIONS = (RENEW, END, EXTEND)
+EXTENDED = "Extended"
+# probation extension choices, in months
+EXTEND_MONTHS = ("1", "2", "3", "6")
 HR_ROLES = {"HR Manager", "System Manager"}
 
 # Upper bound for one run of the daily job (the Employee table is small; this keeps it bounded).
@@ -178,11 +184,18 @@ class EmployeeContractReview(Document):
 		elif self.new_contract_end_date and getdate(self.new_contract_end_date) <= getdate(self.end_date):
 			frappe.throw(_("The new contract end date must be after the current one ({0}).").format(formatdate(self.end_date)))
 
-	def apply_decision(self, decision, user, remarks=None):
+	def apply_decision(self, decision, user, remarks=None, extend_months=None):
 		if decision not in DECISIONS:
 			frappe.throw(_("Unknown decision."))
 		if self.status not in OPEN_STATUSES:
 			frappe.throw(_("This review is already closed ({0}).").format(_(self.status)))
+		if decision == EXTEND:
+			if self.review_type != PROBATION_END:
+				frappe.throw(_("Only a probation can be extended."))
+			extend_months = str(cint(extend_months or self.extend_months))
+			if extend_months not in EXTEND_MONTHS:
+				frappe.throw(_("Choose how long to extend the probation: 1, 2, 3 or 6 months."))
+			self.extend_months = extend_months
 
 		if self.status == PENDING_LINE_MANAGER and user == self.line_manager_user:
 			self.line_manager_decision = decision
@@ -197,6 +210,8 @@ class EmployeeContractReview(Document):
 			frappe.throw(_("Only the line manager or HR can decide on this review."), frappe.PermissionError)
 
 		self.hr_decision = decision
+		if decision == EXTEND:
+			self.new_probation_end_date = getdate(add_months(self.end_date, cint(self.extend_months)))
 		self.hr_decided_by = user
 		self.hr_decided_on = now_datetime()
 		self.status = final_status(self.review_type, decision)
@@ -219,9 +234,10 @@ class EmployeeContractReview(Document):
 		self.save()
 
 	def update_employee(self):
-		if self.hr_decision == RENEW and self.review_type == CONTRACT_END and self.new_contract_end_date:
-			frappe.db.set_value("Employee", self.employee, CONTRACT_END_FIELD, self.new_contract_end_date)
-		elif (
+		# A contract renewal only records the decision: the new end date comes from Qiwa and HR updates
+		# the employee, which starts the next review. An extension stays on this review and moves the
+		# probation end date (see extended_probations).
+		if (
 			self.hr_decision == RENEW
 			and self.review_type == PROBATION_END
 			and not frappe.db.get_value("Employee", self.employee, "final_confirmation_date")
@@ -232,7 +248,7 @@ class EmployeeContractReview(Document):
 			"Info",
 			_("{0}: {1} ({2}).").format(
 				_(self.review_type),
-				decision_label(self.review_type, self.hr_decision),
+				decision_label(self.review_type, self.hr_decision, self.extend_months),
 				'<a href="{0}">{1}</a>'.format(get_url_to_form(DOCTYPE, self.name), self.name),
 			),
 		)
@@ -243,15 +259,13 @@ class EmployeeContractReview(Document):
 
 
 @frappe.whitelist()
-def decide(name, decision, remarks=None, new_contract_end_date=None):
+def decide(name, decision, remarks=None, extend_months=None):
 	doc = frappe.get_doc(DOCTYPE, name)
 	user = frappe.session.user
 	if user != doc.line_manager_user and not is_hr_approver(user):
 		frappe.throw(_("Only the line manager or HR can decide on this review."), frappe.PermissionError)
 
-	if new_contract_end_date and is_hr_approver(user):
-		doc.new_contract_end_date = new_contract_end_date
-	return doc.apply_decision(decision, user, remarks)
+	return doc.apply_decision(decision, user, remarks, extend_months)
 
 
 @frappe.whitelist()
@@ -391,13 +405,15 @@ def get_probations_ending(start, end):
 		fields.append(PROBATION_MONTHS_FIELD)
 
 	filters = employee_filters()
-	filters["date_of_joining"] = ["between", [add_months(today(), -12), today()]]
+	# 24 months covers a probation plus an extension
+	filters["date_of_joining"] = ["between", [add_months(today(), -24), today()]]
 	rows = frappe.get_all("Employee", filters=filters, fields=fields, limit_page_length=JOB_LIMIT)
 
 	start, end = getdate(start), getdate(end)
+	extended = extended_probations([row.name for row in rows])
 	result = []
 	for row in rows:
-		end_date = probation_end_date(row)
+		end_date = extended.get(row.name) or probation_end_date(row)
 		if end_date and start <= end_date <= end:
 			result.append((row.name, end_date))
 	return result
@@ -415,6 +431,23 @@ def probation_end_date(row):
 
 	months = cint(row.get(PROBATION_MONTHS_FIELD)) if PROBATION_MONTHS_FIELD else 0
 	return getdate(add_months(row.date_of_joining, months or DEFAULT_PROBATION_MONTHS))
+
+
+def extended_probations(employees):
+	"""Latest extended probation end date per employee, from approved extensions."""
+	out = {}
+	if not employees:
+		return out
+	for row in frappe.get_all(
+		DOCTYPE,
+		filters={"employee": ["in", employees], "review_type": PROBATION_END, "status": EXTENDED},
+		fields=["employee", "new_probation_end_date"],
+		order_by="new_probation_end_date asc",
+		limit_page_length=0,
+	):
+		if row.new_probation_end_date:
+			out[row.employee] = getdate(row.new_probation_end_date)
+	return out
 
 
 def open_review(employee, review_type, end_date):
@@ -487,7 +520,12 @@ def share_with(doc, user):
 # -------
 
 
-def decision_label(review_type, decision):
+def decision_label(review_type, decision, months=None):
+	if decision == EXTEND:
+		months = cint(months)
+		if not months:
+			return _("Extend probation")
+		return _("Extend probation by 1 month") if months == 1 else _("Extend probation by {0} months").format(months)
 	if review_type == PROBATION_END:
 		return _("Confirm employee") if decision == RENEW else _("End employment")
 	return _("Renew contract") if decision == RENEW else _("End contract")
@@ -496,6 +534,8 @@ def decision_label(review_type, decision):
 def final_status(review_type, decision):
 	if decision == END:
 		return "Ended"
+	if decision == EXTEND:
+		return EXTENDED
 	return "Confirmed" if review_type == PROBATION_END else "Renewed"
 
 
@@ -521,13 +561,17 @@ def send_stage_emails(doc, reminder=False):
 
 	if doc.status == PENDING_LINE_MANAGER and doc.line_manager_user:
 		choice = (
-			_("Confirm the employee or end the employment.")
+			_("Confirm the employee, extend the probation (on the review), or end the employment.")
 			if doc.review_type == PROBATION_END
 			else _("Renew the contract or end it.")
 		)
-		send_action_email(doc, doc.line_manager_user, subject_for(doc, prefix), "{0} {1} {2}".format(ends, choice, _("HR approves next.")))
+		send_action_email(
+			doc, doc.line_manager_user, subject_for(doc, prefix), "{0} {1} {2}".format(ends, choice, _("HR approves next.")),
+			cc=[c for c in HR_CC if c != doc.line_manager_user],
+		)
 
-		heads_up = [u for u in hr if u != doc.line_manager_user]
+		# HR approvers already in cc don't need the separate heads-up
+		heads_up = [u for u in hr if u != doc.line_manager_user and u not in HR_CC]
 		if SEND_HR_HEADS_UP and heads_up:
 			send_email(
 				doc,
@@ -548,7 +592,7 @@ def send_stage_emails(doc, reminder=False):
 				ends,
 				_("<b>{0}</b> recommends: <b>{1}</b>. Approve it, or choose the other option.").format(
 					escape(doc.line_manager_name or doc.line_manager_user),
-					escape(decision_label(doc.review_type, doc.line_manager_decision)),
+					escape(decision_label(doc.review_type, doc.line_manager_decision, doc.extend_months)),
 				),
 			)
 		else:
@@ -557,40 +601,51 @@ def send_stage_emails(doc, reminder=False):
 			send_action_email(doc, user, subject_for(doc, prefix), intro)
 
 
-def send_action_email(doc, user, subject, intro):
-	actions = [
-		(decision_label(doc.review_type, RENEW), action_url(doc, RENEW, user), "ok"),
-		(decision_label(doc.review_type, END), action_url(doc, END, user), "bad"),
-	]
+def send_action_email(doc, user, subject, intro, cc=None):
+	actions = [(decision_label(doc.review_type, RENEW), action_url(doc, RENEW, user), "ok")]
+	if doc.review_type == PROBATION_END:
+		if doc.status == PENDING_HR and doc.line_manager_decision == EXTEND and doc.extend_months:
+			# HR approves the line manager's extension straight from the email
+			actions.append((decision_label(doc.review_type, EXTEND, doc.extend_months), action_url(doc, EXTEND, user), "ok"))
+		else:
+			# the extension length is chosen on the review
+			actions.append((decision_label(doc.review_type, EXTEND), get_url_to_form(DOCTYPE, doc.name), "link"))
+	actions.append((decision_label(doc.review_type, END), action_url(doc, END, user), "bad"))
 	note = None
-	if doc.review_type == CONTRACT_END and doc.status == PENDING_HR:
-		note = _("To renew with a new contract end date, enter it on the review before approving, or update the employee afterwards.")
-	send_email(doc, [user], subject, _("Approval needed"), intro, actions=actions, note=note)
+	if doc.review_type == CONTRACT_END:
+		note = _("Renewing only records the decision. HR updates the new contract end date on the employee once Qiwa is done.")
+	send_email(doc, [user], subject, _("Approval needed"), intro, actions=actions, note=note, cc=cc)
 
 
 def send_outcome_email(doc):
-	recipients = list(dict.fromkeys(get_hr_approvers() + ([doc.line_manager_user] if doc.line_manager_user else [])))
+	# to the line manager, cc HR (approvers and HR head); straight to HR when there is no line manager
+	hr = list(dict.fromkeys(get_hr_approvers() + HR_CC))
+	recipients = [doc.line_manager_user] if doc.line_manager_user else hr
 	if not recipients:
 		return
+	cc = [u for u in hr if u not in recipients]
 
-	label = decision_label(doc.review_type, doc.hr_decision)
+	label = decision_label(doc.review_type, doc.hr_decision, doc.extend_months)
 	intro = _("HR approved <b>{0}</b> for <b>{1}</b> ({2}: {3}).").format(
 		escape(label), escape(doc.employee_name or doc.employee), _(end_date_label(doc)), formatdate(doc.end_date)
 	)
 	if doc.review_type == CONTRACT_END and doc.hr_decision == RENEW:
-		if doc.new_contract_end_date:
-			intro += " " + _("New contract end date: <b>{0}</b>.").format(formatdate(doc.new_contract_end_date))
-		else:
-			intro += " " + _("Update the contract end date on the employee record.")
+		intro += " " + _("HR: please set the new contract end date on the employee once Qiwa is done.")
+	elif doc.hr_decision == EXTEND and doc.new_probation_end_date:
+		intro += " " + _("New probation end date: <b>{0}</b>.").format(formatdate(doc.new_probation_end_date))
 	elif doc.hr_decision == END:
 		intro += " " + _("HR to proceed with the separation.")
 
-	send_email(doc, recipients, "{0}: {1}, {2}".format(_("Decision recorded"), label, doc.employee_name or doc.employee), _(doc.status), intro)
+	send_email(
+		doc, recipients, "{0}: {1}, {2}".format(_("Decision recorded"), label, doc.employee_name or doc.employee),
+		_(doc.status), intro, cc=cc,
+	)
 
 
-def send_email(doc, recipients, subject, badge, intro, actions=None, note=None):
+def send_email(doc, recipients, subject, badge, intro, actions=None, note=None, cc=None):
 	frappe.sendmail(
 		recipients=recipients,
+		cc=[c for c in (cc or []) if c and c not in recipients] or None,
 		subject=subject,
 		message=render_email(doc, badge, intro, actions, note),
 		reference_doctype=doc.doctype,
@@ -618,7 +673,7 @@ def render_email(doc, badge, intro, actions=None, note=None):
 		(_("Date of Joining"), formatdate(doc.date_of_joining) if doc.date_of_joining else None),
 		(_(end_date_label(doc)), formatdate(doc.end_date)),
 		(_("Line Manager"), doc.line_manager_name),
-		(_("Line Manager Decision"), decision_label(doc.review_type, doc.line_manager_decision) if doc.line_manager_decision else None),
+		(_("Line Manager Decision"), decision_label(doc.review_type, doc.line_manager_decision, doc.extend_months) if doc.line_manager_decision else None),
 		(_("Review"), '<a href="{0}" style="color:{1};font-weight:700;text-decoration:none;">{2}</a>'.format(get_url_to_form(DOCTYPE, doc.name), b["primary"], doc.name)),
 	]
 	row_html = "".join(
@@ -636,6 +691,8 @@ def render_email(doc, badge, intro, actions=None, note=None):
 		for label, url, kind in actions:
 			if kind == "bad":
 				bg, fg, border = "#ffffff", "#b91c1c", "border:2px solid #b91c1c;"
+			elif kind == "link":
+				bg, fg, border = "#ffffff", b["primary"], "border:2px solid {0};".format(b["primary"])
 			else:
 				bg, fg, border = b["primary"], "#ffffff", ""
 			cells += (
