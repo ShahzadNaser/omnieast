@@ -1,9 +1,11 @@
-name: Security check (warn only)
+name: Security check
 
-# Flags whitelisted functions with no permission check, SQL built from strings and
-# secrets in code, on the Python lines a pull request changes. WARN ONLY: findings show
-# as warnings on the pull request and the check never fails, so it never holds up a
-# merge. Do not add it to the required status checks.
+# Flags whitelisted functions with no permission check, functions open to guests, SQL
+# built from strings, ignore_permissions in whitelisted functions and secrets in code,
+# on the Python lines a pull request changes (diff from where the branch left the base
+# branch, so older code does not block). BLOCKING (JHR/HT/00648): a finding fails this
+# check. For it to stop the merge button, "Security check" must be a required status
+# check on the base branch (Settings > Branches > branch protection).
 
 on:
   pull_request:
@@ -17,15 +19,13 @@ concurrency:
 
 jobs:
   security-check:
-    name: Security check (warn only)
+    name: Security check
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Scan changed Python code
-        continue-on-error: true
         run: python3 ci/security_check.py "origin/${{ github.base_ref }}" HEAD

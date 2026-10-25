@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Merge / pull request security check. WARN ONLY: it never blocks a merge.
+"""Merge / pull request security check (JHR/HT/00648). BLOCKING: a finding fails the check and
+the merge waits until it is fixed.
 
 Looks only at the Python lines a merge request adds or changes and flags:
   W1  a whitelisted server function with no visible permission check
@@ -9,9 +10,11 @@ Looks only at the Python lines a merge request adds or changes and flags:
   K1  a password, token, key or secret written in the code
 
 Usage: python3 ci/security_check.py <base_sha_or_ref> <head_sha_or_ref>
-Exit code 1 when something is flagged. The CI job is set so a red result only
-warns (GitLab allow_failure: true, GitHub continue-on-error: true).
-On GitHub Actions each finding is also shown as a warning on the changed file.
+Only the changes the merge request brings in are checked (diff from where the branch left the
+target branch), so older code already on the target branch does not block.
+Exit code 1 when something is flagged, 2 when the target branch cannot be found or has no common
+history with the branch; either way the CI job fails and the merge is blocked.
+On GitHub Actions each finding is also shown as an error on the changed file.
 """
 
 import ast
@@ -131,7 +134,17 @@ def main():
 		print("Security check skipped: needs Python 3.8+ on the runner (has %d.%d)." % sys.version_info[:2])
 		return 1
 	base, head = sys.argv[1], sys.argv[2]
-	merge_base = git("merge-base", base, head).strip() or base
+	for ref in (base, head):
+		if not git("rev-parse", "--verify", "--quiet", ref + "^{commit}").strip():
+			print("Security check failed: cannot find %s in the checkout, so the changes cannot be "
+				  "checked. Re-run the job; if it fails again the CI fetch needs fixing." % ref)
+			return 2
+	merge_base = git("merge-base", base, head).strip()
+	if not merge_base:
+		print("Security check failed: no common history between %s and %s, so this merge request's "
+			  "changes cannot be told apart from older code. Re-run the job with full git history."
+			  % (base, head))
+		return 2
 	findings = []
 	for path, lines_changed in sorted(changed_lines(merge_base, head).items()):
 		source = git("show", "%s:%s" % (head, path))
@@ -141,11 +154,11 @@ def main():
 		print("Security check: nothing flagged in the changed Python code.")
 		return 0
 	github = os.environ.get("GITHUB_ACTIONS") == "true"
-	print("Security check: %d item(s) to look at (warn only, the merge is not blocked)\n" % len(findings))
+	print("Security check: %d item(s) to fix before this can be merged\n" % len(findings))
 	for path, line, code, msg in sorted(set(findings)):
 		print("  [%s] %s:%s  %s" % (code, path, line, msg))
 		if github:
-			print("::warning file=%s,line=%s,title=Security check %s::%s" % (path, line, code, msg))
+			print("::error file=%s,line=%s,title=Security check %s::%s" % (path, line, code, msg))
 	print("\nWhat the codes mean: " + CODES)
 	return 1
 
