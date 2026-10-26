@@ -391,6 +391,7 @@ def send_reminders():
 		open_review(employee, PROBATION_END, end_date)
 
 	send_one_month_reminders()
+	send_pending_digests()
 
 
 def employee_filters():
@@ -501,6 +502,143 @@ def send_one_month_reminders():
 		except Exception:
 			frappe.db.rollback()
 			frappe.log_error(title="Employee Contract Review: {0}".format(review.name), message=frappe.get_traceback())
+
+
+# Pending reminders
+# -----------------
+# Until a review is decided, each line manager (Pending Line Manager) and HR (Pending HR) get one email
+# listing everything waiting on them, cc the HR head (HR_CC): every Sunday and Wednesday, and every day
+# once an end date is a week away or less. Runs at the end of the daily job.
+
+DIGEST_WEEKDAYS = (6, 2)  # Sunday, Wednesday
+URGENT_DAYS = 7
+
+
+def send_pending_digests():
+	try:
+		_send_pending_digests()
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Employee Contract Review: pending reminders failed", message=frappe.get_traceback())
+
+
+def _send_pending_digests():
+	reviews = frappe.get_all(
+		DOCTYPE,
+		filters={"status": ["in", OPEN_STATUSES], "creation": ["<", today()]},
+		fields=["name", "review_type", "status", "employee", "employee_name", "designation", "end_date",
+			"line_manager_user", "line_manager_name", "line_manager_decision", "company"],
+		order_by="end_date asc",
+		limit_page_length=JOB_LIMIT,
+	)
+	if not reviews:
+		return
+	as_of = getdate(today())
+	scheduled_day = as_of.weekday() in DIGEST_WEEKDAYS
+	for r in reviews:
+		r.days_left = (getdate(r.end_date) - as_of).days
+
+	groups = []
+	by_manager = {}
+	for r in reviews:
+		if r.status == PENDING_LINE_MANAGER and r.line_manager_user:
+			by_manager.setdefault(r.line_manager_user, []).append(r)
+	for user, rows in by_manager.items():
+		groups.append(([user], rows, True))
+	hr = get_hr_approvers()
+	hr_rows = [r for r in reviews if r.status == PENDING_HR]
+	if hr and hr_rows:
+		groups.append((hr, hr_rows, False))
+
+	for recipients, rows, manager in groups:
+		if not scheduled_day and not any(r.days_left <= URGENT_DAYS for r in rows):
+			continue
+		try:
+			send_digest(recipients, [c for c in HR_CC if c not in recipients], rows, manager)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(title="Employee Contract Review reminder: {0}".format(", ".join(recipients)), message=frappe.get_traceback())
+
+
+def days_left_label(days):
+	if days < 0:
+		return _("overdue by {0} days").format(-days)
+	if days == 0:
+		return _("today")
+	return _("in 1 day") if days == 1 else _("in {0} days").format(days)
+
+
+def send_digest(recipients, cc, rows, manager):
+	b = get_brand(rows[0].company)
+	font = "font-family:'Segoe UI', Tahoma, Arial, Helvetica, sans-serif;"
+	urgent = sum(1 for r in rows if r.days_left <= URGENT_DAYS)
+	if manager:
+		subject = _("Reminder: {0} contract/probation decision(s) waiting for you").format(len(rows))
+		title = _("Waiting for your decision")
+		intro = _("These reviews are waiting for your decision. Open each one and choose; HR approves next.")
+	else:
+		subject = _("Reminder: {0} contract/probation approval(s) waiting for HR").format(len(rows))
+		title = _("Waiting for HR approval")
+		intro = _("These reviews are waiting for HR approval. Open each one to approve or choose the other option.")
+	if urgent:
+		subject += " - " + _("{0} due within a week").format(urgent)
+
+	headers = [_("Employee"), _("Review"), _("Ends")] + ([] if manager else [_("Line Manager Recommends")])
+	th = "".join(
+		'<td style="padding:8px 10px;background:{0};border-bottom:1px solid #e3e7ef;font-size:11px;font-weight:700;'
+		'text-transform:uppercase;letter-spacing:.4px;color:#5b6475;">{1}</td>'.format(b["tint"], escape(h))
+		for h in headers
+	)
+	trs = ""
+	for r in rows:
+		bg = "#fdecec" if r.days_left <= URGENT_DAYS else "#ffffff"
+		cells = [
+			'<a href="{0}" style="color:{1};font-weight:700;text-decoration:none;">{2}</a><br>'
+			'<span style="color:#5b6475;font-size:12px;">{3}</span>'.format(
+				get_url_to_form(DOCTYPE, r.name), b["primary"], escape(r.employee_name or r.employee), escape(r.designation or r.name)
+			),
+			escape(_(r.review_type)),
+			'{0}<br><span style="color:#5b6475;font-size:12px;">{1}</span>'.format(formatdate(r.end_date), escape(days_left_label(r.days_left))),
+		]
+		if not manager:
+			if r.line_manager_decision:
+				cells.append(escape("{0} ({1})".format(decision_label(r.review_type, r.line_manager_decision), r.line_manager_name or "")))
+			else:
+				cells.append(escape(_("No line manager")))
+		trs += "<tr>" + "".join(
+			'<td valign="top" style="padding:9px 10px;background:{0};border-bottom:1px solid #eef1f6;font-size:13px;'
+			'line-height:18px;color:#0f172a;">{1}</td>'.format(bg, c)
+			for c in cells
+		) + "</tr>"
+
+	note = _("Rows in red end within a week. This reminder comes every Sunday and Wednesday, and daily in the last week, until each review is decided.")
+	message = (
+		'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef1f6" style="background:#eef1f6;"><tr><td align="center" style="padding:28px 12px;">'
+		'<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;border-collapse:separate;{font}">'
+		'<tr><td bgcolor="{p}" style="background:{p};border-radius:14px 14px 0 0;padding:18px 24px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
+		'<td bgcolor="#ffffff" style="background:#ffffff;border-radius:10px;padding:8px 12px;"><img src="{logo}" alt="{co}" height="36" style="display:block;height:36px;width:auto;border:0;"></td></tr></table></td></tr>'
+		'<tr><td height="4" bgcolor="{a}" style="height:4px;line-height:4px;font-size:0;background:{a};">&nbsp;</td></tr>'
+		'<tr><td bgcolor="#ffffff" style="background:#ffffff;padding:28px 28px 24px;">'
+		'<div style="font-size:19px;line-height:26px;font-weight:700;color:#0f172a;margin:0 0 12px;">{title}</div>'
+		'<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1e293b;">{intro}</p>'
+		'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e3e7ef;border-collapse:collapse;"><tr>{th}</tr>{trs}</table>'
+		'<p style="margin:16px 0 0;font-size:12px;line-height:18px;color:#6b7280;">{note}</p></td></tr>'
+		'<tr><td bgcolor="{t}" style="background:{t};border-radius:0 0 14px 14px;padding:16px 28px;font-size:12px;line-height:18px;color:#5b6475;">'
+		'<strong style="color:{p};">{co}</strong><br>{sent} &middot; {site}</td></tr>'
+		"</table></td></tr></table>"
+	).format(
+		font=font, p=b["primary"], a=b["accent"], t=b["tint"], logo=b["logo"], co=escape(b["company"]),
+		title=escape(title), intro=escape(intro), th=th, trs=trs, note=escape(note),
+		sent=_("Sent automatically from {0}").format(ERP_NAME), site=SITE,
+	)
+	frappe.sendmail(
+		recipients=recipients,
+		cc=cc or None,
+		expose_recipients="header",
+		subject=subject,
+		message=message,
+	)
 
 
 # Recipients
@@ -655,6 +793,7 @@ def send_email(doc, recipients, subject, badge, intro, actions=None, note=None, 
 	frappe.sendmail(
 		recipients=recipients,
 		cc=[c for c in (cc or []) if c and c not in recipients] or None,
+		expose_recipients="header",
 		subject=subject,
 		message=render_email(doc, badge, intro, actions, note),
 		reference_doctype=doc.doctype,
