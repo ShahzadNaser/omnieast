@@ -44,7 +44,16 @@ app_include_js = ["phone_rows.bundle.js", "help_link.bundle.js", "breadcrumbs.bu
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Payment Request": "public/js/payment_request.js"}  # JHR/HT/00615
+doctype_js = {
+    "Payment Request": "public/js/payment_request.js",
+    #Project / Cost Center mandatory for Omni East, Cost Center follows the Project
+    "Journal Entry": ["public/js/project_cost_center.js", "public/js/journal_entry.js"],
+    "Purchase Invoice": ["public/js/project_cost_center.js", "public/js/purchase_invoice.js"],
+    "Payment Entry": ["public/js/project_cost_center.js", "public/js/payment_entry.js"],
+    "Asset": ["public/js/project_cost_center.js", "public/js/asset.js"],
+    # ISS-2026-00109: "Create Resume Duty Request" on the approved leave
+    "Leave Application": "public/js/leave_application.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the top company line in the tree
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -82,6 +91,12 @@ doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the t
 # 	"methods": "omnieast.utils.jinja_methods",
 # 	"filters": "omnieast.utils.jinja_filters"
 # }
+
+# Boot
+# ----
+
+# companies / exemptions for the Project / Cost Center form scripts
+extend_bootinfo = "omnieast.overrides.project_mandatory.extend_bootinfo"
 
 # Installation
 # ------------
@@ -121,13 +136,14 @@ doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the t
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# ISS-2026-00109: employees see only their own Resume Duty Requests, whatever their User Permissions are
+permission_query_conditions = {
+    "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.get_permission_query_conditions",
+}
+
+has_permission = {
+    "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.has_permission",
+}
 
 # Document Events
 # ---------------
@@ -151,13 +167,20 @@ doc_events = {
     "HR Settings": {
         "validate": "omnieast.overrides.weekend_leave.validate_hr_settings",
     },
+    #fetch blank Project / Cost Center from the linked document, then both are mandatory on save
     "Journal Entry": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.journal_entry.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_journal_entry",
         "on_submit": "omnieast.overrides.journal_entry.on_submit",
         "on_cancel": "omnieast.overrides.journal_entry.on_cancel",
     },
     "Purchase Invoice": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.purchase_invoice.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_purchase_invoice",
+    },
+    "Payment Entry": {
+        "before_validate": "omnieast.overrides.payment_entry.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_payment_entry",
     },
     "Sales Invoice": {
         "validate": "omnieast.overrides.house_account.validate",
@@ -167,7 +190,8 @@ doc_events = {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
     "Asset": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.asset.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_asset",
     },
     "GL Entry": {
         "before_insert": "omnieast.overrides.gl_entry.before_insert",
@@ -187,6 +211,8 @@ scheduler_events = {
         "omnieast.security.auto_disable.run",
         # ISS-2026-00139: contract-end and probation-end approvals, 2 months and 1 month before
         "omnieast.omnieast.doctype.employee_contract_review.employee_contract_review.send_reminders",
+        # ISS-2026-00109: leave ended, no Resume Duty Request yet
+        "omnieast.overrides.resume_duty.send_resume_duty_reminders",
     ],
     "daily_long": [
         "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
@@ -219,7 +245,17 @@ fixtures = [
         "filters": [[
             "name",
             "in",
-            ["Project-total_indirect_cost", "Sales Invoice-due_date_change_reason"],
+            [
+                "Project-total_indirect_cost",
+                "Sales Invoice-due_date_change_reason",
+                # ISS-2026-00109: Leave Application > Vacation Details
+                "Leave Application-custom_vacation_details_section",
+                "Leave Application-custom_is_vacation_leave",
+                "Leave Application-custom_request_advance_salary",
+                "Leave Application-custom_column_break_vacation",
+                "Leave Application-custom_exit_reentry_visa_paid_by",
+                "Leave Application-custom_flight_ticket_paid_by",
+            ],
         ]],
     },
 ]
@@ -248,6 +284,8 @@ override_whitelisted_methods = {
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_details": "omnieast.overrided_whitelisted.leave_application.get_leave_details",
 	# ISS-2026-00130: the form's leave-day count includes the weekend while the HR Settings switch is on
 	"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days": "omnieast.overrided_whitelisted.leave_application.get_number_of_leave_days",
+	# User > Impersonate: no email / bell notification to the user, Administrator cannot be impersonated
+	"frappe.core.doctype.user.user.impersonate": "omnieast.overrided_whitelisted.user.impersonate",
 }
 #
 # each overriding function accepts a `data` argument;

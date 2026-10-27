@@ -2,6 +2,31 @@ import frappe
 from collections import defaultdict
 from frappe.utils import flt
 
+from omnieast.overrides.project_mandatory import (
+    applies,
+    fill,
+    get_dimensions_of,
+    set_cost_center_from_project,
+    single,
+)
+
+
+def before_validate(doc, method=None):
+    """fill blank Project / Cost Center from each row's reference document."""
+    if doc.docstatus != 0 or not applies(doc):
+        return
+
+    for row in doc.accounts:
+        if row.reference_type and row.reference_name:
+            fill(row, *get_dimensions_of(row.reference_type, row.reference_name), doc.company)
+
+    # one Project on the entry: it applies to every row
+    project = single(row.project for row in doc.accounts)
+    for row in doc.accounts:
+        if project and not row.project:
+            row.project = project
+        set_cost_center_from_project(row, doc.company)
+
 
 def on_submit(doc, method=None):
     _apply_indirect_cost_delta(doc, sign=1)
