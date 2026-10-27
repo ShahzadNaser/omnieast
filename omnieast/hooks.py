@@ -44,7 +44,14 @@ app_include_js = ["phone_rows.bundle.js", "help_link.bundle.js", "breadcrumbs.bu
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Payment Request": "public/js/payment_request.js"}  # JHR/HT/00615
+doctype_js = {
+    "Payment Request": "public/js/payment_request.js",
+    #Project / Cost Center mandatory for Omni East, Cost Center follows the Project
+    "Journal Entry": ["public/js/project_cost_center.js", "public/js/journal_entry.js"],
+    "Purchase Invoice": ["public/js/project_cost_center.js", "public/js/purchase_invoice.js"],
+    "Payment Entry": ["public/js/project_cost_center.js", "public/js/payment_entry.js"],
+    "Asset": ["public/js/project_cost_center.js", "public/js/asset.js"],
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the top company line in the tree
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -82,6 +89,12 @@ doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the t
 # 	"methods": "omnieast.utils.jinja_methods",
 # 	"filters": "omnieast.utils.jinja_filters"
 # }
+
+# Boot
+# ----
+
+# companies / exemptions for the Project / Cost Center form scripts
+extend_bootinfo = "omnieast.overrides.project_mandatory.extend_bootinfo"
 
 # Installation
 # ------------
@@ -151,13 +164,20 @@ doc_events = {
     "HR Settings": {
         "validate": "omnieast.overrides.weekend_leave.validate_hr_settings",
     },
+    #fetch blank Project / Cost Center from the linked document, then both are mandatory on save
     "Journal Entry": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.journal_entry.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_journal_entry",
         "on_submit": "omnieast.overrides.journal_entry.on_submit",
         "on_cancel": "omnieast.overrides.journal_entry.on_cancel",
     },
     "Purchase Invoice": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.purchase_invoice.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_purchase_invoice",
+    },
+    "Payment Entry": {
+        "before_validate": "omnieast.overrides.payment_entry.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_payment_entry",
     },
     "Sales Invoice": {
         "validate": "omnieast.overrides.house_account.validate",
@@ -167,7 +187,8 @@ doc_events = {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
     "Asset": {
-        "before_submit": "omnieast.overrides.project_mandatory.validate_project",
+        "before_validate": "omnieast.overrides.asset.before_validate",
+        "validate": "omnieast.overrides.project_mandatory.validate_asset",
     },
     "GL Entry": {
         "before_insert": "omnieast.overrides.gl_entry.before_insert",
