@@ -284,6 +284,8 @@ override_whitelisted_methods = {
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_details": "omnieast.overrided_whitelisted.leave_application.get_leave_details",
 	# ISS-2026-00130: the form's leave-day count includes the weekend while the HR Settings switch is on
 	"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days": "omnieast.overrided_whitelisted.leave_application.get_number_of_leave_days",
+	# User > Impersonate: no email / bell notification to the user, Administrator cannot be impersonated
+	"frappe.core.doctype.user.user.impersonate": "omnieast.overrided_whitelisted.user.impersonate",
 }
 #
 # each overriding function accepts a `data` argument;
