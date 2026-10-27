@@ -51,6 +51,8 @@ doctype_js = {
     "Purchase Invoice": ["public/js/project_cost_center.js", "public/js/purchase_invoice.js"],
     "Payment Entry": ["public/js/project_cost_center.js", "public/js/payment_entry.js"],
     "Asset": ["public/js/project_cost_center.js", "public/js/asset.js"],
+    # ISS-2026-00109: "Create Resume Duty Request" on the approved leave
+    "Leave Application": "public/js/leave_application.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the top company line in the tree
@@ -134,13 +136,14 @@ extend_bootinfo = "omnieast.overrides.project_mandatory.extend_bootinfo"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# ISS-2026-00109: employees see only their own Resume Duty Requests, whatever their User Permissions are
+permission_query_conditions = {
+    "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.get_permission_query_conditions",
+}
+
+has_permission = {
+    "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.has_permission",
+}
 
 # Document Events
 # ---------------
@@ -208,6 +211,8 @@ scheduler_events = {
         "omnieast.security.auto_disable.run",
         # ISS-2026-00139: contract-end and probation-end approvals, 2 months and 1 month before
         "omnieast.omnieast.doctype.employee_contract_review.employee_contract_review.send_reminders",
+        # ISS-2026-00109: leave ended, no Resume Duty Request yet
+        "omnieast.overrides.resume_duty.send_resume_duty_reminders",
     ],
     "daily_long": [
         "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
@@ -240,7 +245,17 @@ fixtures = [
         "filters": [[
             "name",
             "in",
-            ["Project-total_indirect_cost", "Sales Invoice-due_date_change_reason"],
+            [
+                "Project-total_indirect_cost",
+                "Sales Invoice-due_date_change_reason",
+                # ISS-2026-00109: Leave Application > Vacation Details
+                "Leave Application-custom_vacation_details_section",
+                "Leave Application-custom_is_vacation_leave",
+                "Leave Application-custom_request_advance_salary",
+                "Leave Application-custom_column_break_vacation",
+                "Leave Application-custom_exit_reentry_visa_paid_by",
+                "Leave Application-custom_flight_ticket_paid_by",
+            ],
         ]],
     },
 ]

@@ -3,9 +3,14 @@
 
 frappe.ui.form.on("Resume Duty Request", {
 	setup(frm) {
-		// approved leaves that are not resumed yet (of the selected employee, when there is one)
+		// approved leaves that need a Resume Duty Request and have none yet (of the selected employee, when there is one)
 		frm.set_query("leave_application", () => {
-			const filters = { docstatus: 1, status: "Approved", custom_resumed_on: ["is", "not set"] };
+			const filters = {
+				docstatus: 1,
+				status: "Approved",
+				custom_resume_required: 1,
+				custom_resume_duty_request: ["is", "not set"],
+			};
 			if (frm.doc.employee) {
 				filters.employee = frm.doc.employee;
 			}
@@ -14,12 +19,12 @@ frappe.ui.form.on("Resume Duty Request", {
 	},
 
 	async onload(frm) {
-		if (!frm.is_new() || frm.doc.employee) return;
+		if (!frm.is_new()) return;
 
 		if (frm.doc.leave_application) {
-			// opened from the leave's Connections
+			// opened from the leave (button or Connections)
 			frm.trigger("leave_application");
-		} else if (window.hrms && hrms.get_current_employee) {
+		} else if (!frm.doc.employee && window.hrms && hrms.get_current_employee) {
 			const employee = await hrms.get_current_employee(frm);
 			if (employee) {
 				frm.set_value("employee", employee);
@@ -27,16 +32,23 @@ frappe.ui.form.on("Resume Duty Request", {
 		}
 	},
 
-	async leave_application(frm) {
-		if (!frm.doc.leave_application) return;
+	leave_application(frm) {
+		frm.events.fill_resume_details(frm);
+	},
 
-		const { message } = await frappe.db.get_value(
-			"Leave Application",
-			frm.doc.leave_application,
-			"employee",
-		);
-		if (message && message.employee && message.employee !== frm.doc.employee) {
-			frm.set_value("employee", message.employee);
+	resume_date(frm) {
+		frm.events.fill_resume_details(frm);
+	},
+
+	async fill_resume_details(frm) {
+		if (!frm.doc.leave_application || frm.doc.docstatus !== 0) return;
+
+		const { message } = await frappe.call({
+			method: "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.get_resume_details",
+			args: { leave_application: frm.doc.leave_application, resume_date: frm.doc.resume_date },
+		});
+		if (message) {
+			await frm.set_value(message);
 		}
 	},
 });

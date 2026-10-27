@@ -4,7 +4,7 @@
 """Resume Duty Request (ISS-2026-00130): the employee's return to work after a leave.
 
 It can only be submitted when the employee has a check-in (Employee Checkin, fed by the biometric
-devices) on the resume date. On submit the leave is marked as resumed (Leave Application >
+devices) on or after the resume date. On submit the leave is marked as resumed (Leave Application >
 Resumed On); the leave's own status and workflow are not touched.
 """
 
@@ -13,7 +13,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_days, formatdate, get_link_to_form, getdate, today
 
-from hrms.utils.holiday_list import get_holiday_dates_between_range
+from omnieast.overrides.resume_duty import REQUIRED_FIELD, get_expected_resume_date, get_holidays
 
 HR_ROLES = {"System Manager", "HR Manager", "HR User"}
 
@@ -81,7 +81,7 @@ class ResumeDutyRequest(Document):
 		leave = frappe.db.get_value(
 			"Leave Application",
 			self.leave_application,
-			["employee", "docstatus", "status", "leave_type", "from_date", "to_date"],
+			["employee", "docstatus", "status", "leave_type", "from_date", "to_date", REQUIRED_FIELD],
 			as_dict=True,
 		)
 		if not leave:
@@ -101,16 +101,24 @@ class ResumeDutyRequest(Document):
 				)
 			)
 
+		if not leave.get(REQUIRED_FIELD):
+			frappe.throw(
+				_("Leave Application {0} does not need a Resume Duty Request.").format(
+					get_link_to_form("Leave Application", self.leave_application)
+				)
+			)
+
 		self.leave_type = leave.leave_type
 		self.leave_from_date = leave.from_date
 		self.leave_to_date = leave.to_date
 
 	def validate_resume_date(self):
-		if getdate(self.resume_date) <= getdate(self.leave_to_date):
+		# an early return (before the last day of the leave) is allowed, 0 days late
+		if getdate(self.resume_date) < getdate(self.leave_from_date):
 			frappe.throw(
-				_(
-					"The resume date must be after the last day of the leave ({0}). If the employee came back early, amend the leave first."
-				).format(formatdate(self.leave_to_date))
+				_("The resume date cannot be before the first day of the leave ({0}).").format(
+					formatdate(self.leave_from_date)
+				)
 			)
 
 		if getdate(self.resume_date) > getdate(today()):
@@ -130,48 +138,96 @@ class ResumeDutyRequest(Document):
 			)
 
 	def set_expected_resume_date(self):
-		"""First working day after the leave, from the employee's Holiday List."""
-		first_day = add_days(getdate(self.leave_to_date), 1)
-		resume_date = getdate(self.resume_date)
-		holidays = {
-			getdate(day)
-			for day in get_holiday_dates_between_range(
-				self.employee,
-				first_day,
-				max(resume_date, add_days(first_day, 60)),
-				raise_exception_for_holiday_list=False,
-			)
-		}
-
-		expected = first_day
-		while expected in holidays:
-			expected = add_days(expected, 1)
-		self.expected_resume_date = expected
-
-		days_late = 0
-		day = expected
-		while day < resume_date:
-			if day not in holidays:
-				days_late += 1
-			day = add_days(day, 1)
-		self.working_days_late = days_late
+		self.expected_resume_date = get_expected_resume_date(self.employee, self.leave_to_date)
+		self.working_days_late = get_working_days_late(self.employee, self.expected_resume_date, self.resume_date)
 
 	def set_checkin(self):
-		first_checkin = None
-		if self.employee and self.resume_date:
-			day = getdate(self.resume_date)
-			checkins = frappe.get_all(
-				"Employee Checkin",
-				filters=[
-					["employee", "=", self.employee],
-					["time", ">=", f"{day} 00:00:00"],
-					["time", "<", f"{add_days(day, 1)} 00:00:00"],
-				],
-				fields=["time"],
-				order_by="time asc",
-				limit=1,
-			)
-			first_checkin = checkins[0].time if checkins else None
+		self.first_checkin_time = get_first_checkin(self.employee, self.resume_date)
+		self.checkin_found = "Yes" if self.first_checkin_time else "No"
 
-		self.first_checkin_time = first_checkin
-		self.checkin_found = "Yes" if first_checkin else "No"
+
+def get_working_days_late(employee, expected_resume_date, resume_date):
+	"""Working days from the expected resume date up to (not including) the actual one; 0 if on time or early."""
+	expected, resume_date = getdate(expected_resume_date), getdate(resume_date)
+	if resume_date <= expected:
+		return 0
+
+	holidays = get_holidays(employee, expected, resume_date)
+	days_late, day = 0, expected
+	while day < resume_date:
+		if day not in holidays:
+			days_late += 1
+		day = add_days(day, 1)
+	return days_late
+
+
+def get_first_checkin(employee, resume_date):
+	"""First Employee Checkin on or after the resume date."""
+	if not (employee and resume_date):
+		return None
+
+	checkins = frappe.get_all(
+		"Employee Checkin",
+		filters=[["employee", "=", employee], ["time", ">=", f"{getdate(resume_date)} 00:00:00"]],
+		fields=["time"],
+		order_by="time asc",
+		limit=1,
+	)
+	return checkins[0].time if checkins else None
+
+
+@frappe.whitelist()
+def get_resume_details(leave_application, resume_date=None):
+	"""Values the form shows as soon as the leave (and resume date) is picked; validate sets them again."""
+	frappe.has_permission("Leave Application", "read", leave_application, throw=True)
+
+	leave = frappe.db.get_value(
+		"Leave Application",
+		leave_application,
+		["employee", "employee_name", "department", "company", "leave_type", "from_date", "to_date"],
+		as_dict=True,
+	)
+	if not leave:
+		return {}
+
+	expected = get_expected_resume_date(leave.employee, leave.to_date)
+	details = {
+		"employee": leave.employee,
+		"employee_name": leave.employee_name,
+		"department": leave.department,
+		"company": leave.company,
+		"leave_type": leave.leave_type,
+		"leave_from_date": leave.from_date,
+		"leave_to_date": leave.to_date,
+		"expected_resume_date": expected,
+	}
+	if resume_date:
+		first_checkin = get_first_checkin(leave.employee, resume_date)
+		details.update(
+			working_days_late=get_working_days_late(leave.employee, expected, resume_date),
+			first_checkin_time=first_checkin,
+			checkin_found="Yes" if first_checkin else "No",
+		)
+	return details
+
+
+def is_hr_user(user=None):
+	return bool(HR_ROLES & set(frappe.get_roles(user)))
+
+
+def get_permission_query_conditions(user=None):
+	"""Without an HR role, only the user's own employee's requests (whatever their User Permissions are)."""
+	user = user or frappe.session.user
+	if user == "Administrator" or is_hr_user(user):
+		return ""
+
+	employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	return "`tabResume Duty Request`.`employee` = {0}".format(frappe.db.escape(employee or ""))
+
+
+def has_permission(doc, ptype=None, user=None, debug=False):
+	user = user or frappe.session.user
+	if user == "Administrator" or is_hr_user(user) or not doc.get("employee"):
+		return True
+
+	return doc.employee == frappe.db.get_value("Employee", {"user_id": user}, "name")
