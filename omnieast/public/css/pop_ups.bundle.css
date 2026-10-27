@@ -1,0 +1,117 @@
+/* ── Pop-ups: layered surfaces (same file on all six desks) ─────────
+   Pop-ups (Assign To, Share, quick entry, prompts) were one flat pale
+   sheet. Now: white header and footer bars, a tinted canvas, each
+   section a white card, fields with a visible edge.
+   Folder pop-ups on /desk (.desktop-modal) keep their own look.
+   Byte-identical on every site; the accent comes from --pu-accent. */
+.modal:not(.desktop-modal) .modal-content {
+  background: #eef1f7 !important;
+  border: 1px solid #dfe4ee !important;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, .22), 0 2px 6px rgba(16, 24, 40, .08) !important;
+  overflow: hidden;
+}
+.modal:not(.desktop-modal) .modal-header {
+  background: #fff !important;
+  border-bottom: 1px solid #e3e8f1 !important;
+  padding: 14px 20px !important;
+}
+.modal:not(.desktop-modal) .modal-body {
+  padding: 16px !important;
+}
+.modal:not(.desktop-modal) .modal-body .form-section.visible-section:not(.empty-section) {
+  background: #fff;
+  border: 0 !important;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px #e3e8f1, 0 1px 2px rgba(16, 24, 40, .05);
+  padding: 18px 18px 2px !important; /* fields carry 16px below, so 18px shows on all sides */
+  margin: 0 0 12px !important;
+}
+.modal:not(.desktop-modal) .modal-body .form-section.visible-section:not(.empty-section):last-of-type {
+  margin-bottom: 0 !important;
+}
+.modal:not(.desktop-modal) .modal-body .form-section.visible-section:not(.empty-section) > .section-body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.modal:not(.desktop-modal) .modal-body div.form-control input {
+  background: transparent !important;
+}
+.modal:not(.desktop-modal) .modal-body .control-label {
+  color: #3a4560;
+  font-weight: 600;
+}
+.modal:not(.desktop-modal) .modal-body :is(input.form-control, select.form-control, textarea.form-control, div.form-control) {
+  background: #f7f9fc !important;
+  border: 1px solid #d9e0ea !important;
+  border-radius: 8px !important;
+}
+.modal:not(.desktop-modal) .modal-body :is(input.form-control, select.form-control, textarea.form-control, div.form-control):is(:focus, :focus-within) {
+  background: #fff !important;
+  border-color: var(--pu-accent, var(--primary)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pu-accent, var(--primary)) 22%, transparent) !important;
+}
+.modal:not(.desktop-modal) .modal-body .ql-toolbar {
+  background: #f3f5fa !important;
+  border: 1px solid #d9e0ea !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+.modal:not(.desktop-modal) .modal-body .ql-container {
+  background: #fff !important;
+  border: 1px solid #d9e0ea !important;
+  border-top: 0 !important;
+  border-radius: 0 0 8px 8px !important;
+}
+.modal:not(.desktop-modal) .modal-footer {
+  background: #fff !important;
+  border-top: 1px solid #e3e8f1 !important;
+  padding: 12px 20px !important;
+}
+
+/* night */
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-content {
+  background: var(--bg-color) !important;
+  border-color: rgba(255, 255, 255, .08) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) :is(.modal-header, .modal-footer) {
+  background: var(--fg-color) !important;
+  border-color: rgba(255, 255, 255, .08) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body .form-section.visible-section:not(.empty-section) {
+  background: var(--fg-color);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body .control-label {
+  color: rgba(255, 255, 255, .78);
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body :is(input.form-control, select.form-control, textarea.form-control, div.form-control) {
+  background: rgba(255, 255, 255, .05) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body :is(input.form-control, select.form-control, textarea.form-control, div.form-control):is(:focus, :focus-within) {
+  background: rgba(255, 255, 255, .08) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body .ql-toolbar {
+  background: rgba(255, 255, 255, .06) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body .ql-container,
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body .ql-editor {
+  background: rgba(255, 255, 255, .03) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+}
+
+/* phones */
+@media (max-width: 767.98px) {
+  .modal:not(.desktop-modal) .modal-header { padding: 12px 16px !important; }
+  .modal:not(.desktop-modal) .modal-body { padding: 12px !important; }
+  .modal:not(.desktop-modal) .modal-body .form-section.visible-section:not(.empty-section) {
+    padding: 16px 14px 0 !important;
+    margin-bottom: 10px !important;
+  }
+  .modal:not(.desktop-modal) .modal-body .form-section .section-body > .form-column {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .modal:not(.desktop-modal) .modal-footer { padding: 10px 16px !important; }
+}
