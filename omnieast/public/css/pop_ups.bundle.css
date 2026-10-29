@@ -115,3 +115,144 @@
   }
   .modal:not(.desktop-modal) .modal-footer { padding: 10px 16px !important; }
 }
+
+/* ── Pop-ups, round 2: clear hover, clean message dialogs ───────────
+   1. Suggestion lists (Ctrl+K search, top-bar search, link fields):
+      the row under the mouse or keyboard is filled with the brand
+      colour, with an Enter mark on the right, so it is obvious which
+      row Enter will open. While the mouse is over the list only the
+      hovered row is lit.
+   2. Menus (dropdowns) use the same fill.
+   3. Dialogs: no accent line hugging the top edge; plain messages
+      (confirm, message) sit on white, lined up with the title;
+      the secondary button has a visible edge. */
+:root,
+body {
+  --pu-hl-fill: var(--pu-accent, var(--primary));
+  --pu-hl-on: var(--pu-on-accent, #fff);
+  --pu-hl-soft: color-mix(in srgb, var(--pu-accent, var(--primary)) 14%, #fff);
+}
+[data-theme="dark"],
+[data-theme="dark"] body {
+  --pu-hl-soft: color-mix(in srgb, var(--pu-accent, var(--primary)) 24%, transparent);
+}
+
+/* 1. suggestion lists */
+body .awesomplete > ul[role="listbox"] > :is(li, [role="option"]) {
+  position: relative;
+  border-radius: 8px !important;
+  transition: background-color .12s ease, color .12s ease, box-shadow .12s ease;
+}
+body .awesomplete > ul[role="listbox"]:not(:hover) > :is(li, [role="option"])[aria-selected="true"],
+body .awesomplete > ul[role="listbox"] > :is(li, [role="option"]):hover {
+  background-color: var(--pu-hl-fill) !important;
+  color: var(--pu-hl-on) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--pu-hl-fill) 35%, transparent) !important;
+  padding-right: 34px !important;
+}
+body .awesomplete > ul[role="listbox"]:not(:hover) > :is(li, [role="option"])[aria-selected="true"] *,
+body .awesomplete > ul[role="listbox"] > :is(li, [role="option"]):hover * {
+  color: inherit !important;
+}
+body .awesomplete > ul[role="listbox"]:not(:hover) > :is(li, [role="option"])[aria-selected="true"] mark,
+body .awesomplete > ul[role="listbox"] > :is(li, [role="option"]):hover mark {
+  background: color-mix(in srgb, var(--pu-hl-on) 28%, transparent) !important;
+}
+body .awesomplete > ul[role="listbox"]:not(:hover) > :is(li, [role="option"])[aria-selected="true"]::after,
+body .awesomplete > ul[role="listbox"] > :is(li, [role="option"]):hover::after {
+  content: "\21B5";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--pu-hl-on);
+  opacity: .9;
+}
+body .awesomplete > ul[role="listbox"]:hover > :is(li, [role="option"])[aria-selected="true"]:not(:hover) {
+  background-color: transparent !important;
+}
+/* link-field and top-bar suggestion boxes: a clear white card */
+body :not(.navbar-modal-wrapper) > .awesomplete > ul[role="listbox"] {
+  background: #fff;
+  border: 1px solid #dfe4ee !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, .14), 0 2px 6px rgba(16, 24, 40, .06) !important;
+  padding: 6px !important;
+  scrollbar-width: thin;
+}
+[data-theme="dark"] body :not(.navbar-modal-wrapper) > .awesomplete > ul[role="listbox"] {
+  background: var(--fg-color);
+  border-color: rgba(255, 255, 255, .1) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
+}
+
+/* 2. menus */
+body .dropdown-menu .dropdown-item {
+  border-radius: 8px;
+}
+body .dropdown-menu .dropdown-item:is(:hover, :focus) {
+  background-color: var(--pu-hl-fill) !important;
+  color: var(--pu-hl-on) !important;
+}
+body .dropdown-menu .dropdown-item:is(:hover, :focus) * {
+  color: inherit !important;
+}
+
+/* 3. dialogs */
+.modal:not(.desktop-modal) .modal-header::before {
+  display: none !important;
+}
+/* round 1 clipped the pop-up (overflow: hidden), which cut off link-field
+   suggestions in short pop-ups; the bars keep the rounded corners instead */
+.modal:not(.desktop-modal) .modal-content {
+  overflow: visible !important;
+}
+.modal:not(.desktop-modal) .modal-header {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+.modal:not(.desktop-modal) .modal-footer {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+.modal:not(.desktop-modal) .modal-content:has(> .modal-footer.hide) > .modal-body {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+.modal:not(.desktop-modal) .modal-body:has(> div > .msgprint, > div > .frappe-confirm-message) {
+  background: #fff !important;
+  padding: 18px 20px !important;
+}
+.modal:not(.desktop-modal) .modal-body :is(.msgprint, .frappe-confirm-message) {
+  margin: 0 !important;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3a4560;
+}
+.modal:not(.desktop-modal) .modal-footer .btn-modal-secondary {
+  background: #fff !important;
+  border: 1px solid #d9e0ea !important;
+  color: #3a4560 !important;
+}
+.modal:not(.desktop-modal) .modal-footer .btn-modal-secondary:hover {
+  background: var(--pu-hl-soft) !important;
+  border-color: var(--pu-hl-fill) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body:has(> div > .msgprint, > div > .frappe-confirm-message) {
+  background: var(--fg-color) !important;
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-body :is(.msgprint, .frappe-confirm-message) {
+  color: rgba(255, 255, 255, .82);
+}
+[data-theme="dark"] .modal:not(.desktop-modal) .modal-footer .btn-modal-secondary {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, .18) !important;
+  color: rgba(255, 255, 255, .85) !important;
+}
+@media (max-width: 767.98px) {
+  .modal:not(.desktop-modal) .modal-body:has(> div > .msgprint, > div > .frappe-confirm-message) {
+    padding: 16px !important;
+  }
+}
