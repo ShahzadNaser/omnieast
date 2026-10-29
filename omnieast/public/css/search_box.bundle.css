@@ -1,0 +1,71 @@
+/* ===== Search box (Ctrl+K pop-up, v16) =====
+   One rounded field with the search icon inside it, and no divider line
+   cutting through it. Display only; uses the theme's --jb-* colours. */
+.modal .navbar-modal-wrapper .awesomebar-input-row {
+  height: 42px;
+  padding: 0 14px;
+  gap: 10px;
+  background: var(--fg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.modal .navbar-modal-wrapper .awesomebar-input-row:focus-within {
+  border-color: var(--jb-accent);
+  box-shadow: 0 0 0 3px var(--jb-accent-soft);
+}
+.modal .navbar-modal-wrapper .awesomebar-search-icon {
+  padding: 0 !important;
+  color: var(--jb-accent);
+}
+.modal .navbar-modal-wrapper .awesomebar-search-icon svg { width: 16px; height: 16px; }
+body .modal .navbar-modal-wrapper .awesomebar-input-row input#navbar-search,
+body .modal .navbar-modal-wrapper .awesomebar-input-row input#navbar-search:focus {
+  height: 40px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 14px;
+}
+/* Older v16 builds: the icon is a loose absolute div before the field and sits under it */
+body .modal .navbar-modal-wrapper { position: relative; }
+body .modal .navbar-modal-wrapper > .modal-search-icon {
+  position: absolute;
+  top: 7px;
+  left: 18px;
+  height: 42px;
+  width: 16px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  color: var(--jb-accent);
+  pointer-events: none;
+}
+body .modal .navbar-modal-wrapper > .modal-search-icon svg { width: 16px; height: 16px; }
+body .modal .navbar-modal-wrapper > .awesomplete > input#navbar-search,
+body .modal .navbar-modal-wrapper > .awesomplete > input#navbar-search:focus {
+  height: 42px;
+  padding: 0 14px 0 40px !important;
+  background: var(--fg-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important;
+  font-size: 14px;
+}
+body .modal .navbar-modal-wrapper > .awesomplete > input#navbar-search:focus {
+  border-color: var(--jb-accent) !important;
+  box-shadow: 0 0 0 3px var(--jb-accent-soft) !important;
+}
+/* Frappe's divider sits 40px down and cuts through the field; the field's own edge separates it from the results */
+.modal .navbar-modal-wrapper .modal-divider { display: none !important; }
+.modal .navbar-modal-wrapper .awesomplete ul { margin-top: 14px; }
+@media (max-width: 767.98px) {
+  body .modal .navbar-modal-wrapper input#navbar-search,
+  body .modal .navbar-modal-wrapper input#navbar-search:focus { font-size: 16px !important; }
+}
