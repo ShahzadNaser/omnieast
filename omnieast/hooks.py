@@ -275,6 +275,8 @@ extend_doctype_class = {
     "Project": "omnieast.overrides.project.CustomProjectMixin",
     # ISS-2026-00130: Resume Duty Request on return from leave
     "Leave Application": "omnieast.overrides.resume_duty.LeaveApplicationResumeDutyMixin",
+    # ported from JawaHR (jawaerp v14): book deferral up to Process posting_date, not month-end
+    "Process Deferred Accounting": "omnieast.overrides.process_deferred_accounting.ProcessDeferredAccountingMixin",
 }
 
 # Overriding Methods
