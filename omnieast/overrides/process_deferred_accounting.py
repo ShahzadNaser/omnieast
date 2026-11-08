@@ -16,6 +16,7 @@ class ProcessDeferredAccountingMixin:
 	def on_submit(self):
 		_original_get_booking_dates = deferred_revenue.get_booking_dates
 		deferred_revenue.get_booking_dates = get_booking_dates
+		frappe.flags.pda_start_date = self.start_date
 		try:
 			conditions = build_conditions(self.type, self.account, self.company)
 			if self.type == "Income":
@@ -28,6 +29,7 @@ class ProcessDeferredAccountingMixin:
 				)
 		finally:
 			deferred_revenue.get_booking_dates = _original_get_booking_dates
+			frappe.flags.pda_start_date = None
 
 
 def get_booking_dates(doc, item, posting_date=None, prev_posting_date=None):
@@ -72,12 +74,13 @@ def get_booking_dates(doc, item, posting_date=None, prev_posting_date=None):
 		if prev_gl_entry:
 			start_date = getdate(add_days(prev_gl_entry[0].posting_date, 1))
 		else:
-			# book remaining from today's posting_date forward, not retroactively from service_start_date
-			start_date = (
-				item.service_start_date
-				if getdate(item.service_start_date) > getdate(posting_date)
-				else getdate(posting_date)
-			)
+			# first booking for this item: clamp to the PDA window's start_date
+			# so we don't recognize months earlier than the operator asked for,
+			# but we also don't collapse to a single day (which would zero the amount)
+			pda_start = frappe.flags.get("pda_start_date")
+			start_date = getdate(item.service_start_date)
+			if pda_start and getdate(pda_start) > start_date:
+				start_date = getdate(pda_start)
 	else:
 		start_date = getdate(add_days(prev_posting_date, 1))
 
