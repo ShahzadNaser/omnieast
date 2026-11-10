@@ -150,6 +150,15 @@ has_permission = {
 # Hook on document methods and events
 
 doc_events = {
+    # live leave balance: a balance adjustment or days paid out move next year's carry-over
+    "Leave Adjustment": {
+        "on_submit": "omnieast.leave.live_balance.after_balance_document",
+        "on_cancel": "omnieast.leave.live_balance.after_balance_document",
+    },
+    "Leave Encashment": {
+        "on_submit": "omnieast.leave.live_balance.after_balance_document",
+        "on_cancel": "omnieast.leave.live_balance.after_balance_document",
+    },
     "Leave Application": {
         # ISS-2026-00130: weekend inside leave, switched on in HR Settings > Leaves
         "before_validate": "omnieast.overrides.weekend_leave.before_validate",
@@ -215,7 +224,7 @@ scheduler_events = {
         "omnieast.overrides.resume_duty.send_resume_duty_reminders",
     ],
     "daily_long": [
-        "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry"
+        "omnieast.scheduled_tasks.update_narration_in_gle.update_narration_in_gl_entry", "omnieast.leave.live_balance.open_next_year",
     ],
     "cron": {
         "*/10 * * * *": [
@@ -270,11 +279,13 @@ fixtures = [
 #
 # Specify custom mixins to extend the standard doctype controller.
 extend_doctype_class = {
+    # live leave balance (Annual Leave): a balance added, changed or cancelled moves next year's carry-over
+    "Leave Allocation": "omnieast.overrides.live_leave_balance.LeaveAllocationLiveBalanceMixin",
 	"Job Requisition": "omnieast.overrides.job_requisition.CustomJobRequisitionMixin",
     "Workspace Sidebar": "omnieast.overrides.workspace_sidebar.CustomWorkspaceSidebar",
     "Project": "omnieast.overrides.project.CustomProjectMixin",
     # ISS-2026-00130: Resume Duty Request on return from leave
-    "Leave Application": "omnieast.overrides.resume_duty.LeaveApplicationResumeDutyMixin",
+    "Leave Application": ["omnieast.overrides.resume_duty.LeaveApplicationResumeDutyMixin", "omnieast.overrides.live_leave_balance.LeaveApplicationLiveBalanceMixin"],
     # ported from JawaHR (jawaerp v14): book deferral up to Process posting_date, not month-end
     "Process Deferred Accounting": "omnieast.overrides.process_deferred_accounting.ProcessDeferredAccountingMixin",
 }
