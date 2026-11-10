@@ -56,6 +56,17 @@ def _should_apply(doc):
 	return applies(doc.leave_type)
 
 
+def _live_balance(doc):
+	"""The live leave balance when it handles this leave (Annual Leave from 2026 on), else None.
+
+	It tests the balance over this year and the next together and books one ledger row per calendar
+	year (omnieast/leave/live_balance.py). Imported here because that module uses the day count above.
+	"""
+	from omnieast.leave import live_balance
+
+	return live_balance if live_balance.covers(doc.leave_type, doc.from_date) else None
+
+
 def validate(doc, method=None):
 	"""Leave Application validate (runs after HRMS has worked out its own total)."""
 	if not _should_apply(doc):
@@ -66,6 +77,11 @@ def validate(doc, method=None):
 		return
 
 	doc.total_leave_days = days
+	live_balance = _live_balance(doc)
+	if live_balance:
+		# this year and the next are one pool of days: tested there, not against one year on its own
+		live_balance.check_leave(doc)
+		return
 	_validate_balance(doc)
 
 
@@ -76,6 +92,9 @@ def on_submit(doc, method=None):
 	expiry; it then recounts each part itself, and the difference is booked here.
 	"""
 	if doc.status != "Approved" or not _should_apply(doc):
+		return
+	if _live_balance(doc):
+		# already booked in full, one ledger row per calendar year
 		return
 
 	booked = -sum(
