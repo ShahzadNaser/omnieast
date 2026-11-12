@@ -512,6 +512,8 @@ def send_one_month_reminders():
 
 DIGEST_WEEKDAYS = (6, 2)  # Sunday, Wednesday
 URGENT_DAYS = 7
+# shown on every reminder that lists a review past its end date (reminders stay daily until it is decided)
+SALARY_WARNING = "Salary for employees past their end date will not be paid until a decision is recorded here."
 
 
 def send_pending_digests():
@@ -573,6 +575,7 @@ def send_digest(recipients, cc, rows, manager):
 	b = get_brand(rows[0].company)
 	font = "font-family:'Segoe UI', Tahoma, Arial, Helvetica, sans-serif;"
 	urgent = sum(1 for r in rows if r.days_left <= URGENT_DAYS)
+	overdue = sum(1 for r in rows if r.days_left < 0)
 	if manager:
 		subject = _("Reminder: {0} contract/probation decision(s) waiting for you").format(len(rows))
 		title = _("Waiting for your decision")
@@ -583,6 +586,8 @@ def send_digest(recipients, cc, rows, manager):
 		intro = _("These reviews are waiting for HR approval. Open each one to approve or choose the other option.")
 	if urgent:
 		subject += " - " + _("{0} due within a week").format(urgent)
+	if overdue:
+		subject += " - " + _("{0} overdue, salary on hold").format(overdue)
 
 	headers = [_("Employee"), _("Review"), _("Ends")] + ([] if manager else [_("Line Manager Recommends")])
 	th = "".join(
@@ -612,7 +617,14 @@ def send_digest(recipients, cc, rows, manager):
 			for c in cells
 		) + "</tr>"
 
-	note = _("Rows in red end within a week. This reminder comes every Sunday and Wednesday, and daily in the last week, until each review is decided.")
+	note = _("Rows in red end within a week or are overdue. This reminder comes every Sunday and Wednesday, and daily from the last week until each review is decided.")
+	warn = ""
+	if overdue:
+		warn = (
+			'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr>'
+			'<td bgcolor="#fdecec" style="background:#fdecec;border-left:4px solid #b91c1c;border-radius:0 6px 6px 0;padding:12px 16px;'
+			'font-size:14px;line-height:1.5;font-weight:700;color:#b91c1c;">{0}</td></tr></table>'
+		).format(escape(_(SALARY_WARNING)))
 	message = (
 		'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef1f6" style="background:#eef1f6;"><tr><td align="center" style="padding:28px 12px;">'
 		'<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;border-collapse:separate;{font}">'
@@ -621,7 +633,7 @@ def send_digest(recipients, cc, rows, manager):
 		'<tr><td height="4" bgcolor="{a}" style="height:4px;line-height:4px;font-size:0;background:{a};">&nbsp;</td></tr>'
 		'<tr><td bgcolor="#ffffff" style="background:#ffffff;padding:28px 28px 24px;">'
 		'<div style="font-size:19px;line-height:26px;font-weight:700;color:#0f172a;margin:0 0 12px;">{title}</div>'
-		'<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1e293b;">{intro}</p>'
+		'<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1e293b;">{intro}</p>{warn}'
 		'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e3e7ef;border-collapse:collapse;"><tr>{th}</tr>{trs}</table>'
 		'<p style="margin:16px 0 0;font-size:12px;line-height:18px;color:#6b7280;">{note}</p></td></tr>'
 		'<tr><td bgcolor="{t}" style="background:{t};border-radius:0 0 14px 14px;padding:16px 28px;font-size:12px;line-height:18px;color:#5b6475;">'
@@ -629,7 +641,7 @@ def send_digest(recipients, cc, rows, manager):
 		"</table></td></tr></table>"
 	).format(
 		font=font, p=b["primary"], a=b["accent"], t=b["tint"], logo=b["logo"], co=escape(b["company"]),
-		title=escape(title), intro=escape(intro), th=th, trs=trs, note=escape(note),
+		title=escape(title), intro=escape(intro), warn=warn, th=th, trs=trs, note=escape(note),
 		sent=_("Sent automatically from {0}").format(ERP_NAME), site=SITE,
 	)
 	frappe.sendmail(
