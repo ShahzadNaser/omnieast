@@ -7,7 +7,6 @@
 	const MAP = {
 		"Employee": "HR Setup",
 		"Sales Invoice": "Invoicing",
-		"Business Travel Request": "HR Setup",
 		"Travel Policy": "HR Setup",
 		"Attendance Time": "HR Setup",
 		"Grade Level": "HR Setup",

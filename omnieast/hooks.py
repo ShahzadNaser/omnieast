@@ -168,7 +168,8 @@ doc_events = {
             "omnieast.overrides.annual_leave_days.validate",
         ],
         "on_submit": [
-            "omnieast.omnieast.doctype.business_travel_request.business_travel_request.create_travel_request",
+            # Business Trip days count as Present (the Business Travel Request is retired: CPV is made from the leave)
+            "omnieast.overrides.business_trip_attendance.mark_present",
             "omnieast.overrides.weekend_leave.on_submit",
             "omnieast.overrides.annual_leave_days.on_submit",
         ],
