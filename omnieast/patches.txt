@@ -1,6 +1,8 @@
 [pre_model_sync]
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
+# role for the Related Party Balances report, before the report and its list are synced
+omnieast.patches.related_party.related_party_balances_role
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
@@ -9,3 +11,5 @@ omnieast.patches.v16.set_annual_leave_requires_resume
 omnieast.patches.v16.allow_user_impersonation
 omnieast.patches.v16.clear_active_list_layout
 omnieast.patches.v16.live_leave_balance_setup
+# Related Party Balances: mapping on Affiliate Accounts, role to Shamim, Accounting shortcut
+omnieast.patches.related_party.related_party_balances_setup
