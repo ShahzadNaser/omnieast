@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "autoname": "field:company",
+ "creation": "2026-11-16 12:00:00.000000",
+ "description": "The sister-company customers, suppliers and current accounts shown on the Related Party Balances report, one list per company",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "column_break_company",
+  "related_parties_group",
+  "lines_section",
+  "lines",
+  "email_section",
+  "send_daily_email",
+  "column_break_email",
+  "daily_email_to"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_company",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Every account under this group must be in the list below. One that is missing shows at the bottom of the report as Unmapped.",
+   "fieldname": "related_parties_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Related Parties Group Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "description": "One line per sister-company customer, supplier or current account. The report lists them by balance, highest first. Untick Include to leave a line off the report.",
+   "fieldname": "lines_section",
+   "fieldtype": "Section Break",
+   "label": "Lines"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Lines",
+   "options": "Related Party Mapping Line"
+  },
+  {
+   "description": "Sent every morning at 07:30 with the report as an Excel file: 1 January of the current fiscal year to the day it is sent, all finance books.",
+   "fieldname": "email_section",
+   "fieldtype": "Section Break",
+   "label": "Daily Email"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_daily_email",
+   "fieldtype": "Check",
+   "label": "Send Daily Email"
+  },
+  {
+   "fieldname": "column_break_email",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "shamim.k@jawahr.com",
+   "depends_on": "send_daily_email",
+   "description": "One email address per line",
+   "fieldname": "daily_email_to",
+   "fieldtype": "Small Text",
+   "label": "Send To",
+   "mandatory_depends_on": "send_daily_email"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Omnieast",
+ "name": "Related Party Mapping",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Related Party Balances",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

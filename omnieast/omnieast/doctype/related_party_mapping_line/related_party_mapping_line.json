@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "creation": "2026-11-16 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sort_order",
+  "line_type",
+  "party",
+  "account",
+  "related_company",
+  "include",
+  "note"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sort Order"
+  },
+  {
+   "columns": 1,
+   "fieldname": "line_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Line Type",
+   "options": "Customer\nSupplier\nCurrent Account",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.line_type!=\"Current Account\"",
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Party",
+   "mandatory_depends_on": "eval:doc.line_type!=\"Current Account\"",
+   "options": "line_type"
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.line_type==\"Current Account\"",
+   "description": "An account under the related parties group set above",
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Account",
+   "mandatory_depends_on": "eval:doc.line_type==\"Current Account\"",
+   "options": "Account"
+  },
+  {
+   "columns": 3,
+   "description": "The sister company shown on the report",
+   "fieldname": "related_company",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Related Company",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "description": "Untick to leave the line off the report without deleting it",
+   "fieldname": "include",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Include"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Omnieast",
+ "name": "Related Party Mapping Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

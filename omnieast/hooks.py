@@ -230,7 +230,11 @@ scheduler_events = {
     "cron": {
         "*/10 * * * *": [
             "omnieast.api.attendance.sync_att_time"
-        ]
+        ],
+        # Related Party Balances: the report to Finance as Excel, every morning
+        "30 7 * * *": [
+            "omnieast.omnieast.doctype.related_party_mapping.related_party_mapping.send_daily_email"
+        ],
     }
 	# "all": [
 	# 	"omnieast.tasks.all"
