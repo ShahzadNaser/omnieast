@@ -21,14 +21,16 @@ from frappe.utils import cint, flt, formatdate, getdate, today
 CURRENT_ACCOUNT = "Current Account"
 UNMAPPED = "Unmapped"
 MAPPING = "Related Party Mapping"
-# Ageing buckets (days before To Date): fieldname, label
+# Ageing buckets (days before To Date), the same as our Accounts Receivable: fieldname, label
 AGEING = (
 	("age_0_30", "0-30"),
 	("age_31_60", "31-60"),
 	("age_61_90", "61-90"),
-	("age_91_180", "91-180"),
-	("age_181_365", "181-365"),
-	("age_over_365", "Over 365"),
+	("age_91_120", "91-120"),
+	("age_121_180", "121-180"),
+	("age_181_360", "181-360"),
+	("age_361_520", "361-520"),
+	("age_over_520", "Above 520"),
 )
 NUMBERS = ("opening_dr", "opening_cr", "balance_from", "debit", "credit", "closing_dr", "closing_cr", "balance_to") + tuple(
 	f for f, _label in AGEING
@@ -56,15 +58,19 @@ AGEING_SQL = """
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) <= 30 THEN gle.debit ELSE 0 END) AS dr_1,
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 31 AND 60 THEN gle.debit ELSE 0 END) AS dr_2,
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 61 AND 90 THEN gle.debit ELSE 0 END) AS dr_3,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 180 THEN gle.debit ELSE 0 END) AS dr_4,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 365 THEN gle.debit ELSE 0 END) AS dr_5,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 365 THEN gle.debit ELSE 0 END) AS dr_6,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 120 THEN gle.debit ELSE 0 END) AS dr_4,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 121 AND 180 THEN gle.debit ELSE 0 END) AS dr_5,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 360 THEN gle.debit ELSE 0 END) AS dr_6,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 361 AND 520 THEN gle.debit ELSE 0 END) AS dr_7,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 520 THEN gle.debit ELSE 0 END) AS dr_8,
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) <= 30 THEN gle.credit ELSE 0 END) AS cr_1,
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 31 AND 60 THEN gle.credit ELSE 0 END) AS cr_2,
 		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 61 AND 90 THEN gle.credit ELSE 0 END) AS cr_3,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 180 THEN gle.credit ELSE 0 END) AS cr_4,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 365 THEN gle.credit ELSE 0 END) AS cr_5,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 365 THEN gle.credit ELSE 0 END) AS cr_6
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 120 THEN gle.credit ELSE 0 END) AS cr_4,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 121 AND 180 THEN gle.credit ELSE 0 END) AS cr_5,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 360 THEN gle.credit ELSE 0 END) AS cr_6,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 361 AND 520 THEN gle.credit ELSE 0 END) AS cr_7,
+		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 520 THEN gle.credit ELSE 0 END) AS cr_8
 	FROM `tabGL Entry` gle
 	WHERE gle.is_cancelled = 0
 		AND gle.company = %(company)s
