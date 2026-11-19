@@ -52,34 +52,45 @@ PARTY_SQL = """
 	GROUP BY gle.party
 """
 
-# Movements of each party up to To Date, by age bucket (same filters as PARTY_SQL), for Show Ageing
-AGEING_SQL = """
+# Ageing the same way as the Accounts Receivable / Payable reports: every invoice (or unallocated
+# payment) still open at To Date, aged by its due date (posting date when it has none).
+# v14 and later: the Payment Ledger. Open amounts in company currency; Dr positive.
+OPEN_ITEMS_PLE_SQL = """
+	SELECT ple.party,
+		SUM(ple.amount) AS outstanding,
+		MAX(CASE WHEN ple.voucher_type = ple.against_voucher_type AND ple.voucher_no = ple.against_voucher_no
+			THEN COALESCE(ple.due_date, ple.posting_date) END) AS ref_date,
+		MIN(ple.posting_date) AS first_date
+	FROM `tabPayment Ledger Entry` ple
+	WHERE ple.delinked = 0
+		AND ple.company = %(company)s
+		AND ple.posting_date <= %(to_date)s
+		AND ple.party_type = %(party_type)s
+		AND ple.party IN %(parties)s
+		AND ple.account_type = %(account_type)s
+		AND (%(finance_book)s = '' OR ple.finance_book = %(finance_book)s)
+	GROUP BY ple.party, ple.against_voucher_type, ple.against_voucher_no
+	HAVING ABS(SUM(ple.amount)) > 0.005
+"""
+
+# v13 has no Payment Ledger: the same from the GL (against_voucher, or the entry itself when unallocated)
+OPEN_ITEMS_GL_SQL = """
 	SELECT gle.party,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) <= 30 THEN gle.debit ELSE 0 END) AS dr_1,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 31 AND 60 THEN gle.debit ELSE 0 END) AS dr_2,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 61 AND 90 THEN gle.debit ELSE 0 END) AS dr_3,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 120 THEN gle.debit ELSE 0 END) AS dr_4,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 121 AND 180 THEN gle.debit ELSE 0 END) AS dr_5,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 360 THEN gle.debit ELSE 0 END) AS dr_6,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 361 AND 520 THEN gle.debit ELSE 0 END) AS dr_7,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 520 THEN gle.debit ELSE 0 END) AS dr_8,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) <= 30 THEN gle.credit ELSE 0 END) AS cr_1,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 31 AND 60 THEN gle.credit ELSE 0 END) AS cr_2,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 61 AND 90 THEN gle.credit ELSE 0 END) AS cr_3,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 91 AND 120 THEN gle.credit ELSE 0 END) AS cr_4,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 121 AND 180 THEN gle.credit ELSE 0 END) AS cr_5,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 181 AND 360 THEN gle.credit ELSE 0 END) AS cr_6,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) BETWEEN 361 AND 520 THEN gle.credit ELSE 0 END) AS cr_7,
-		SUM(CASE WHEN DATEDIFF(%(to_date)s, gle.posting_date) > 520 THEN gle.credit ELSE 0 END) AS cr_8
+		COALESCE(NULLIF(gle.against_voucher_type, ''), gle.voucher_type) AS ref_type,
+		COALESCE(NULLIF(gle.against_voucher, ''), gle.voucher_no) AS ref_no,
+		SUM(gle.debit - gle.credit) AS outstanding,
+		MIN(gle.posting_date) AS first_date
 	FROM `tabGL Entry` gle
+	INNER JOIN `tabAccount` acc ON acc.name = gle.account
 	WHERE gle.is_cancelled = 0
 		AND gle.company = %(company)s
 		AND gle.posting_date <= %(to_date)s
 		AND gle.party_type = %(party_type)s
 		AND gle.party IN %(parties)s
-		AND gle.account NOT IN %(group_accounts)s
+		AND acc.account_type = %(account_type)s
 		AND (%(finance_book)s = '' OR gle.finance_book = %(finance_book)s)
-	GROUP BY gle.party
+	GROUP BY gle.party, ref_type, ref_no
+	HAVING ABS(SUM(gle.debit - gle.credit)) > 0.005
 """
 
 ACCOUNT_SQL = """
@@ -243,8 +254,8 @@ def get_data(filters):
 		for r in frappe.db.sql(PARTY_SQL, dict(params, party_type=party_type, parties=parties), as_dict=True):
 			balances[(party_type, r.party)] = r
 		if cint(filters.show_ageing):
-			for r in frappe.db.sql(AGEING_SQL, dict(params, party_type=party_type, parties=parties), as_dict=True):
-				movements[(party_type, r.party)] = r
+			for party, buckets in open_item_ageing(params, party_type, parties).items():
+				movements[(party_type, party)] = buckets
 		for p in frappe.get_all(party_type, filters={"name": ("in", parties)}, fields=["name", name_field]):
 			names[(party_type, p.name)] = (p.get(name_field) or p.name).strip()
 
@@ -263,12 +274,13 @@ def get_data(filters):
 		else:
 			key = (l.line_type, l.party)
 			row = frappe._dict(code=l.party, account=names.get(key, l.party), party_type=l.line_type)
-		row.update(related_company=l.related_company, line_type=l.line_type, currency=currency, unmapped=l.get("unmapped", 0))
+		# v13: _dict.update() takes one dict, not keyword arguments
+		row.update(dict(related_company=l.related_company, line_type=l.line_type, currency=currency, unmapped=l.get("unmapped", 0)))
 
 		b = balances.get(key) or {}
 		opening, debit, credit = flt(b.get("opening"), 2), flt(b.get("debit"), 2), flt(b.get("credit"), 2)
 		closing = flt(opening + debit - credit, 2)
-		row.update(
+		row.update(dict(
 			opening_dr=opening if opening > 0 else 0,
 			opening_cr=-opening if opening < 0 else 0,
 			balance_from=opening,
@@ -277,9 +289,9 @@ def get_data(filters):
 			closing_dr=closing if closing > 0 else 0,
 			closing_cr=-closing if closing < 0 else 0,
 			balance_to=closing,
-		)
-		if key in movements or (cint(filters.show_ageing) and l.line_type != CURRENT_ACCOUNT):
-			row.update(age_balance(closing, movements.get(key) or {}))
+		))
+		if cint(filters.show_ageing) and l.line_type != CURRENT_ACCOUNT:
+			row.update(movements.get(key) or {f: 0 for f, _label in AGEING})
 		if cint(filters.hide_zero_rows) and not any((opening, debit, credit, closing)):
 			continue
 		rows.append(row)
@@ -310,20 +322,46 @@ def with_subtotals(rows, currency):
 	return out
 
 
-def age_balance(balance, m):
-	"""Balance at To Date split into the AGEING buckets, oldest-first settlement: a debit balance
-	is taken to be the most recent debits (invoices), a credit balance the most recent credits
-	(bills); what is left goes to the oldest bucket. The buckets always add up to the balance."""
-	side = "dr" if balance > 0 else "cr"
-	sign = 1 if balance > 0 else -1
-	remaining = abs(flt(balance, 2))
-	out = []
-	for i in range(1, len(AGEING) + 1):
-		take = min(remaining, max(flt(m.get("{0}_{1}".format(side, i))), 0))
-		out.append(take)
-		remaining -= take
-	out[-1] += remaining
-	return {fieldname: flt(sign * v, 2) for (fieldname, _label), v in zip(AGEING, out)}
+# Upper day of each AGEING bucket; the last bucket is everything older
+AGEING_DAYS = (30, 60, 90, 120, 180, 360, 520)
+
+
+def open_item_ageing(params, party_type, parties):
+	"""{party: {bucket fieldname: amount}} from the open invoices, exactly like Accounts Receivable /
+	Payable with Ageing Based On = Due Date: each open item is aged by its due date (posting date
+	when it has none); an item not yet due goes in no bucket, as on that report."""
+	args = dict(params, party_type=party_type, parties=parties,
+		account_type="Receivable" if party_type == "Customer" else "Payable")
+	to_date = getdate(params["to_date"])
+
+	if frappe.db.table_exists("Payment Ledger Entry"):
+		items = frappe.db.sql(OPEN_ITEMS_PLE_SQL, args, as_dict=True)
+		# the Payment Ledger keeps payables as positive amounts; the report shows Dr positive
+		sign = 1 if party_type == "Customer" else -1
+		for i in items:
+			i.outstanding = sign * flt(i.outstanding)
+	else:
+		items = frappe.db.sql(OPEN_ITEMS_GL_SQL, args, as_dict=True)
+		due = {}
+		for doctype in ("Sales Invoice", "Purchase Invoice"):
+			names = list({i.ref_no for i in items if i.ref_type == doctype})
+			if names:
+				for d in frappe.get_all(doctype, filters={"name": ("in", names)}, fields=["name", "due_date", "posting_date"]):
+					due[(doctype, d.name)] = d.due_date or d.posting_date
+		for i in items:
+			i.ref_date = due.get((i.ref_type, i.ref_no))
+
+	out = {}
+	for i in items:
+		ref_date = getdate(i.ref_date or i.first_date)
+		buckets = out.setdefault(i.party, {f: 0 for f, _label in AGEING})
+		if ref_date > to_date:
+			continue  # not due yet: in the balance, in no bucket (as on Accounts Receivable)
+		age = (to_date - ref_date).days
+		index = next((n for n, days in enumerate(AGEING_DAYS) if age <= days), len(AGEING_DAYS))
+		field = AGEING[index][0]
+		buckets[field] = flt(buckets[field] + flt(i.outstanding), 2)
+	return out
 
 
 def headroom(items):
