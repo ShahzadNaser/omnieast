@@ -272,6 +272,17 @@ fixtures = [
             ],
         ]],
     },
+    {
+        "doctype": "Property Setter",
+        "filters": [[
+            "name",
+            "in",
+            [
+                # Issue Type is mandatory on every Issue (the types themselves are kept in Desk)
+                "Issue-issue_type-reqd",
+            ],
+        ]],
+    },
 ]
 
 # Testing
