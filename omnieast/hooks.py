@@ -142,13 +142,33 @@ extend_bootinfo = [
 # -----------
 # Permissions evaluated in scripted ways
 
+# Account Restriction (Desk): hide accounts, and every entry posted to them, from users of some roles.
+# To cover another doctype, add it here; its Account fields are found automatically.
+_ACCOUNT_RESTRICTED_DOCTYPES = (
+    "Account",
+    "GL Entry",
+    "Journal Entry",
+    "Payment Entry",
+    "Purchase Invoice",
+    "Cash Payment Voucher",
+    "Payment Request",
+)
+
 # ISS-2026-00109: employees see only their own Resume Duty Requests, whatever their User Permissions are
 permission_query_conditions = {
     "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.get_permission_query_conditions",
+    **{
+        doctype: "omnieast.permissions.account_restriction.get_permission_query_conditions"
+        for doctype in _ACCOUNT_RESTRICTED_DOCTYPES
+    },
 }
 
 has_permission = {
     "Resume Duty Request": "omnieast.omnieast.doctype.resume_duty_request.resume_duty_request.has_permission",
+    **{
+        doctype: "omnieast.permissions.account_restriction.has_permission"
+        for doctype in _ACCOUNT_RESTRICTED_DOCTYPES
+    },
 }
 
 # Document Events
@@ -232,6 +252,13 @@ doc_events = {
     },
     "GL Entry": {
         "before_insert": "omnieast.overrides.gl_entry.before_insert",
+    },
+    # Account Restriction: a sub-account added, moved, renamed or deleted changes what a rule hides
+    "Account": {
+        "after_insert": "omnieast.permissions.account_restriction.clear_cache",
+        "on_update": "omnieast.permissions.account_restriction.clear_cache",
+        "on_trash": "omnieast.permissions.account_restriction.clear_cache",
+        "after_rename": "omnieast.permissions.account_restriction.clear_cache",
     },
 	# "*": {
 	# 	"on_update": "method",
