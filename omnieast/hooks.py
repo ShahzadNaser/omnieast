@@ -48,9 +48,11 @@ doctype_js = {
     "Payment Request": "public/js/payment_request.js",
     #Project / Cost Center mandatory for Omni East, Cost Center follows the Project
     "Journal Entry": ["public/js/project_cost_center.js", "public/js/journal_entry.js"],
-    "Purchase Invoice": ["public/js/project_cost_center.js", "public/js/purchase_invoice.js"],
+    "Purchase Invoice": ["public/js/project_cost_center.js", "public/js/purchase_invoice.js", "public/js/asset_usage_purchase.js"],
     "Payment Entry": ["public/js/project_cost_center.js", "public/js/payment_entry.js"],
     "Asset": ["public/js/project_cost_center.js", "public/js/asset.js"],
+    # ISS-2026-00184: Asset Usage (Office / Project) on fixed-asset purchase rows
+    "Purchase Receipt": "public/js/asset_usage_purchase.js",
     # ISS-2026-00109: "Create Resume Duty Request" on the approved leave
     "Leave Application": "public/js/leave_application.js",
 }
@@ -96,7 +98,11 @@ doctype_tree_js = {"Cost Center": "public/js/cost_center_tree.js"}  # hide the t
 # ----
 
 # companies / exemptions for the Project / Cost Center form scripts
-extend_bootinfo = "omnieast.overrides.project_mandatory.extend_bootinfo"
+extend_bootinfo = [
+    "omnieast.overrides.project_mandatory.extend_bootinfo",
+    # ISS-2026-00184: Asset Usage switch for the form scripts
+    "omnieast.assets.asset.extend_bootinfo",
+]
 
 # Installation
 # ------------
@@ -185,8 +191,20 @@ doc_events = {
         "on_cancel": "omnieast.overrides.journal_entry.on_cancel",
     },
     "Purchase Invoice": {
-        "before_validate": "omnieast.overrides.purchase_invoice.before_validate",
-        "validate": "omnieast.overrides.project_mandatory.validate_purchase_invoice",
+        "before_validate": [
+            "omnieast.overrides.purchase_invoice.before_validate",
+            # ISS-2026-00184: blank fixed-asset rows take the header Asset Usage
+            "omnieast.assets.purchase.fill_row_usage",
+        ],
+        "validate": [
+            "omnieast.overrides.project_mandatory.validate_purchase_invoice",
+            # ISS-2026-00184: Project rows debit the Project row's Fixed Asset / CWIP account
+            "omnieast.assets.purchase.validate_purchase",
+        ],
+    },
+    "Purchase Receipt": {
+        "before_validate": "omnieast.assets.purchase.fill_row_usage",
+        "validate": "omnieast.assets.purchase.validate_purchase",
     },
     "Payment Entry": {
         "before_validate": "omnieast.overrides.payment_entry.before_validate",
@@ -200,8 +218,17 @@ doc_events = {
         "before_submit": "omnieast.overrides.project_mandatory.validate_project",
     },
     "Asset": {
-        "before_validate": "omnieast.overrides.asset.before_validate",
-        "validate": "omnieast.overrides.project_mandatory.validate_asset",
+        "before_validate": [
+            "omnieast.overrides.asset.before_validate",
+            # ISS-2026-00184: a draft from a purchase takes the purchase row's Asset Usage
+            "omnieast.assets.asset.before_validate",
+        ],
+        "validate": [
+            "omnieast.overrides.project_mandatory.validate_asset",
+            "omnieast.assets.asset.validate_asset_usage",
+        ],
+        "before_update_after_submit": "omnieast.assets.asset.before_update_after_submit",
+        "on_update_after_submit": "omnieast.assets.asset.on_usage_change",
     },
     "GL Entry": {
         "before_insert": "omnieast.overrides.gl_entry.before_insert",
@@ -269,6 +296,14 @@ fixtures = [
                 "Leave Application-custom_column_break_vacation",
                 "Leave Application-custom_exit_reentry_visa_paid_by",
                 "Leave Application-custom_flight_ticket_paid_by",
+                # ISS-2026-00184: Office / Project asset accounts
+                "Accounts Settings-custom_enable_asset_usage_accounts",
+                "Asset Category Account-custom_asset_usage",
+                "Asset-custom_asset_usage",
+                "Purchase Invoice-custom_asset_usage",
+                "Purchase Invoice Item-custom_asset_usage",
+                "Purchase Receipt-custom_asset_usage",
+                "Purchase Receipt Item-custom_asset_usage",
             ],
         ]],
     },
@@ -293,6 +328,12 @@ extend_doctype_class = {
     "Leave Application": ["omnieast.overrides.resume_duty.LeaveApplicationResumeDutyMixin", "omnieast.overrides.live_leave_balance.LeaveApplicationLiveBalanceMixin"],
     # ported from JawaHR (jawaerp v14): book deferral up to Process posting_date, not month-end
     "Process Deferred Accounting": "omnieast.overrides.process_deferred_accounting.ProcessDeferredAccountingMixin",
+    # ISS-2026-00184: Office / Project asset accounts (omnieast/assets/)
+    "Asset Category": "omnieast.assets.asset_category.AssetCategoryUsageMixin",
+    "Asset": "omnieast.assets.asset.AssetUsageMixin",
+    "Asset Value Adjustment": "omnieast.assets.asset_documents.AssetValueAdjustmentUsageMixin",
+    "Asset Repair": "omnieast.assets.asset_documents.AssetRepairUsageMixin",
+    "Asset Capitalization": "omnieast.assets.asset_documents.AssetCapitalizationUsageMixin",
 }
 
 # Overriding Methods
@@ -304,6 +345,8 @@ override_whitelisted_methods = {
 	"hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days": "omnieast.overrided_whitelisted.leave_application.get_number_of_leave_days",
 	# User > Impersonate: no email / bell notification to the user, Administrator cannot be impersonated
 	"frappe.core.doctype.user.user.impersonate": "omnieast.overrided_whitelisted.user.impersonate",
+	# ISS-2026-00184: Asset > Create > Depreciation Entry with the asset's Office / Project accounts
+	"erpnext.assets.doctype.asset.asset.make_journal_entry": "omnieast.assets.asset.make_journal_entry",
 }
 #
 # each overriding function accepts a `data` argument;
@@ -324,12 +367,15 @@ override_whitelisted_methods = {
 
 # Request Events
 # ----------------
-# before_request = ["omnieast.utils.before_request"]
+# ISS-2026-00184: the asset account patches are applied here, once per process (not from an import in this
+# file: hooks come from the Redis cache in production, so this file may never be imported in a worker).
+# bench console / execute: call omnieast.assets.patches.apply() first.
+before_request = ["omnieast.assets.patches.apply"]
 # after_request = ["omnieast.utils.after_request"]
 
 # Job Events
 # ----------
-# before_job = ["omnieast.utils.before_job"]
+before_job = ["omnieast.assets.patches.apply"]
 # after_job = ["omnieast.utils.after_job"]
 
 # User Data Protection
